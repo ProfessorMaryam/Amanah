@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Heart } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -14,10 +15,39 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    router.push("/dashboard")
+    setLoading(true)
+    setError(null)
+    setMessage(null)
+
+    if (isLogin) {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        setError(error.message)
+      } else {
+        router.push("/dashboard")
+      }
+    } else {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name } },
+      })
+      if (error) {
+        setError(error.message)
+      } else if (data.session) {
+        router.push("/dashboard")
+      } else {
+        setMessage("Check your email to confirm your account, then sign in.")
+      }
+    }
+
+    setLoading(false)
   }
 
   return (
@@ -96,19 +126,34 @@ export default function LoginPage() {
                 />
               </div>
 
+              {error && (
+                <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+                  {error}
+                </p>
+              )}
+
+              {message && (
+                <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+                  {message}
+                </p>
+              )}
+
               <Button
                 type="submit"
                 className="mt-2 h-12 text-lg font-semibold"
                 size="lg"
+                disabled={loading}
               >
-                {isLogin ? "Sign In" : "Create Account"}
+                {loading
+                  ? isLogin ? "Signing in…" : "Creating account…"
+                  : isLogin ? "Sign In" : "Create Account"}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
               <button
                 type="button"
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={() => { setIsLogin(!isLogin); setError(null); setMessage(null) }}
                 className="text-base font-medium text-secondary hover:text-primary transition-colors"
               >
                 {isLogin
