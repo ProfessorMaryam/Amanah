@@ -1,0 +1,113 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Amanah color palette */
+  --background: #fdf5eb;
+  --foreground: #2e4874;
+  --card: #ffffff;
+  --card-foreground: #62474b;
+  --popover: #ffffff;
+  --popover-foreground: #62474b;
+  --primary: #2e4874;
+  --primary-foreground: #ffffff;
+  --secondary: #8fbac9;
+  --secondary-foreground: #2e4874;
+  --muted: #f9dbc0;
+  --muted-foreground: #82918a;
+  --accent: #c4cd90;
+  --accent-foreground: #2e4874;
+  --destructive: #be1e3f;
+  --destructive-foreground: #ffffff;
+  --border: #e8ddd0;
+  --input: #e8ddd0;
+  --ring: #8fbac9;
+  --chart-1: #2e4874;
+  --chart-2: #8fbac9;
+  --chart-3: #c4cd90;
+  --chart-4: #d74261;
+  --chart-5: #f9dbc0;
+  --radius: 1rem;
+  --sidebar: #fdf5eb;
+  --sidebar-foreground: #2e4874;
+  --sidebar-primary: #2e4874;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f9dbc0;
+  --sidebar-accent-foreground: #2e4874;
+  --sidebar-border: #e8ddd0;
+  --sidebar-ring: #8fbac9;
+
+  /* Custom Amanah tokens */
+  --amanah-cream: #fdf5eb;
+  --amanah-peach: #f9dbc0;
+  --amanah-sage: #82918a;
+  --amanah-green: #c4cd90;
+  --amanah-sky: #8fbac9;
+  --amanah-navy: #2e4874;
+  --amanah-rose: #d74261;
+  --amanah-plum: #62474b;
+  --amanah-crimson: #be1e3f;
+}
+
+@theme inline {
+  --font-sans: 'DM Sans', 'DM Sans Fallback', sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Custom color tokens */
+  --color-amanah-cream: var(--amanah-cream);
+  --color-amanah-peach: var(--amanah-peach);
+  --color-amanah-sage: var(--amanah-sage);
+  --color-amanah-green: var(--amanah-green);
+  --color-amanah-sky: var(--amanah-sky);
+  --color-amanah-navy: var(--amanah-navy);
+  --color-amanah-rose: var(--amanah-rose);
+  --color-amanah-plum: var(--amanah-plum);
+  --color-amanah-crimson: var(--amanah-crimson);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
