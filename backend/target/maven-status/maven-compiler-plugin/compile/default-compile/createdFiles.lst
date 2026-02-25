@@ -39,4 +39,3 @@ com\amanah\repository\GoalRepository.class
 com\amanah\dto\UserProfileRequest.class
 com\amanah\entity\FundDirective$FundDirectiveBuilder.class
 com\amanah\controller\SimulationController.class
-com\amanah\entity\InvestmentPortfolio$1.class

@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.5</version>
+        <version>3.4.3</version>
         <relativePath/>
     </parent>
 
@@ -18,8 +18,9 @@
     <description>Amanah family savings planner backend</description>
 
     <properties>
-        <java.version>17</java.version>
-        <lombok.version>1.18.36</lombok.version>
+        <java.version>21</java.version>
+        <lombok.version>1.18.40</lombok.version>
+        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
     </properties>
 
     <dependencies>
