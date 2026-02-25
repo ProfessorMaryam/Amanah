@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
-import type { Child } from "./types"
+import type { Child, Investment, FutureInstructions } from "./types"
 import { mockChildren, mockUser } from "./mock-data"
 
 interface ChildUpdates {
@@ -19,6 +19,8 @@ interface AppContextType {
   deleteChild: (id: string) => void
   addContribution: (childId: string, amount: number, note?: string) => void
   togglePausedGoal: (childId: string) => void
+  setInvestment: (childId: string, investment: Investment) => void
+  setFutureInstructions: (childId: string, instructions: FutureInstructions) => void
   getChild: (id: string) => Child | undefined
   totalSavings: number
 }
@@ -96,6 +98,18 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
     []
   )
 
+  const setInvestment = useCallback((childId: string, investment: Investment) => {
+    setChildrenData((prev) =>
+      prev.map((c) => c.id === childId ? { ...c, investment } : c)
+    )
+  }, [])
+
+  const setFutureInstructions = useCallback((childId: string, instructions: FutureInstructions) => {
+    setChildrenData((prev) =>
+      prev.map((c) => c.id === childId ? { ...c, futureInstructions: instructions } : c)
+    )
+  }, [])
+
   const getChild = useCallback(
     (id: string) => childrenData.find((c) => c.id === id),
     [childrenData]
@@ -116,6 +130,8 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         deleteChild,
         addContribution,
         togglePausedGoal,
+        setInvestment,
+        setFutureInstructions,
         getChild,
         totalSavings,
       }}

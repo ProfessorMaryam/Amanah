@@ -7,8 +7,6 @@ import { useApp } from "@/lib/app-context"
 import { GoalOverview } from "@/components/child-detail/goal-overview"
 import { SavingsChart } from "@/components/child-detail/savings-chart"
 import { ContributionHistory } from "@/components/child-detail/contribution-history"
-import { InvestmentPortfolio } from "@/components/child-detail/investment-portfolio"
-import { FutureInstructions } from "@/components/child-detail/future-instructions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -269,8 +267,6 @@ export default function ChildDetailPage({
             <GoalOverview goal={child.goal} />
             <SavingsChart contributions={child.contributions} currentAmount={child.goal.currentAmount} />
             <ContributionHistory contributions={child.contributions} />
-            <InvestmentPortfolio investment={child.investment} />
-            <FutureInstructions instructions={child.futureInstructions} />
           </div>
         </main>
       </div>

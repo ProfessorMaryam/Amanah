@@ -13,6 +13,9 @@ import {
   LogOut,
   Menu,
   ChevronRight,
+  LayoutList,
+  Briefcase,
+  Shield,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -49,6 +52,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { user, children } = useApp()
   const { signOut } = useAuth()
 
+  // Detect if we're on a child route and extract the child id
+  const childRouteMatch = pathname.match(/^\/dashboard\/child\/([^/]+)/)
+  const activeChildId = childRouteMatch ? childRouteMatch[1] : null
+  const activeChild = activeChildId ? children.find((c) => c.id === activeChildId) : null
+
   return (
     <div className="flex h-full flex-col">
       {/* Logo */}
@@ -80,15 +88,42 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         />
       </nav>
 
+      {/* Child sub-navigation (shown when viewing a child) */}
+      {activeChild && (
+        <div className="flex flex-col gap-1 border-t border-border px-3 py-4">
+          <p className="mb-1 px-4 text-xs font-semibold uppercase tracking-widest text-amanah-sage">
+            {activeChild.name}
+          </p>
+          <NavLink
+            href={`/dashboard/child/${activeChildId}`}
+            icon={LayoutList}
+            label="Overview"
+            active={pathname === `/dashboard/child/${activeChildId}`}
+          />
+          <NavLink
+            href={`/dashboard/child/${activeChildId}/investment`}
+            icon={Briefcase}
+            label="Investment"
+            active={pathname === `/dashboard/child/${activeChildId}/investment`}
+          />
+          <NavLink
+            href={`/dashboard/child/${activeChildId}/directive`}
+            icon={Shield}
+            label="Fund Directive"
+            active={pathname === `/dashboard/child/${activeChildId}/directive`}
+          />
+        </div>
+      )}
+
       {/* Children list */}
       {children.length > 0 && (
         <div className="flex flex-col gap-1 border-t border-border px-3 py-4">
           <p className="mb-1 px-4 text-xs font-semibold uppercase tracking-widest text-amanah-sage">
             Children
           </p>
-          <div className="flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: "220px" }}>
+          <div className="flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: "180px" }}>
             {children.map((child) => {
-              const isActive = pathname === `/dashboard/child/${child.id}`
+              const isActive = pathname.startsWith(`/dashboard/child/${child.id}`)
               const pct = Math.min(100, Math.round((child.goal.currentAmount / child.goal.targetAmount) * 100))
               return (
                 <Link key={child.id} href={`/dashboard/child/${child.id}`} onClick={onNavigate}>
@@ -96,7 +131,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                     className={cn(
                       "flex items-center justify-between rounded-xl px-4 py-2.5 text-sm transition-all duration-150",
                       isActive
-                        ? "bg-primary text-primary-foreground"
+                        ? "bg-primary/10 text-primary font-semibold"
                         : "text-amanah-plum hover:bg-amanah-peach/50 hover:text-primary"
                     )}
                   >
