@@ -6,5 +6,51 @@ __v0_jsx-dev-runtime.ts
 # Common ignores
 node_modules/
 .next/
+.env
 .env*.local
 .DS_Store
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# =========================
+# SPRING BOOT / JAVA BACKEND
+# =========================
+
+# Maven build output
+target/
+
+# Compiled Java classes
+*.class
+
+# Packaged files
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+logs/
+
+# Spring Boot Devtools restart
+.restart/
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# VSCode Java
+.settings/
+.project
+.classpath
+.factorypath
+
+# OS
+Thumbs.db
+
+# Dependency directories
+!**/src/main/**
+!**/src/test/**
