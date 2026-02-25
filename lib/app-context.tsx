@@ -61,7 +61,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
             console.error("[AppContext] Failed to fetch user:", userResponse.status)
           }
           
-          // Fetch children
+          // Fetch children list
           const childrenResponse = await fetch(`${apiUrl}/api/children`, {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -71,31 +71,61 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
           
           if (childrenResponse.ok) {
             const childrenList = await childrenResponse.json()
-            console.log("[AppContext] Children data received:", childrenList)
+            console.log("[AppContext] Children list received:", childrenList)
+            
+            // Fetch full details for each child (includes goals, transactions, savings)
+            const childrenWithDetails = await Promise.all(
+              childrenList.map(async (backendChild: any) => {
+                try {
+                  const detailResponse = await fetch(`${apiUrl}/api/children/${backendChild.id}`, {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                      "X-User-Email": session.user?.email || "",
+                    },
+                  })
+                  if (detailResponse.ok) {
+                    return await detailResponse.json()
+                  }
+                  return { child: backendChild }
+                } catch (e) {
+                  console.error("[AppContext] Failed to fetch child details:", e)
+                  return { child: backendChild }
+                }
+              })
+            )
+            
+            console.log("[AppContext] Children details received:", childrenWithDetails)
             
             // Transform backend data to frontend format
-            const transformedChildren: Child[] = childrenList.map((backendChild: any) => ({
-              id: backendChild.id,
-              name: backendChild.name,
-              dateOfBirth: backendChild.dateOfBirth,
-              photoUrl: backendChild.photoUrl,
-              goal: {
-                name: backendChild.goal?.goalType || "Savings Goal",
-                targetAmount: backendChild.goal?.targetAmount || 0,
-                currentAmount: backendChild.savingsBalance || 0,
-                startDate: backendChild.goal?.createdAt || new Date().toISOString().split("T")[0],
-                targetDate: backendChild.goal?.targetDate || new Date().toISOString().split("T")[0],
-                paused: backendChild.goal?.isPaused || false,
-              },
-              contributions: (backendChild.transactions || []).map((tx: any) => ({
-                id: tx.id,
-                date: new Date(tx.date).toISOString().split("T")[0],
-                amount: parseFloat(tx.amount),
-                note: tx.type,
-              })),
-              investment: backendChild.investment || undefined,
-              futureInstructions: backendChild.futureInstructions || undefined,
-            }))
+            const transformedChildren: Child[] = childrenWithDetails.map((details: any) => {
+              const backendChild = details.child
+              const goal = details.goal
+              const transactions = details.transactions || []
+              const savingsBalance = details.savingsBalance || 0
+              
+              return {
+                id: backendChild.id,
+                name: backendChild.name,
+                dateOfBirth: backendChild.dateOfBirth,
+                photoUrl: backendChild.photoUrl,
+                goal: {
+                  name: goal?.goalType || "Savings Goal",
+                  targetAmount: goal?.targetAmount ? parseFloat(goal.targetAmount) : 0,
+                  currentAmount: savingsBalance ? parseFloat(savingsBalance) : 0,
+                  startDate: goal?.createdAt ? goal.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+                  targetDate: goal?.targetDate || new Date().toISOString().split("T")[0],
+                  paused: goal?.isPaused || false,
+                },
+                contributions: transactions.map((tx: any) => ({
+                  id: tx.id,
+                  date: new Date(tx.date).toISOString().split("T")[0],
+                  amount: parseFloat(tx.amount),
+                  note: tx.type,
+                })),
+                investment: details.investment || undefined,
+                futureInstructions: details.fundDirective || undefined,
+              }
+            })
             
             setChildrenData(transformedChildren)
           } else {
