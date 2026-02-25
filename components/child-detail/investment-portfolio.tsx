@@ -5,9 +5,9 @@ import type { Investment } from "@/lib/types"
 import { Briefcase, TrendingUp } from "lucide-react"
 
 function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-MY", {
+  return new Intl.NumberFormat("en-BH", {
     style: "currency",
-    currency: "MYR",
+    currency: "BHD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)

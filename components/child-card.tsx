@@ -31,9 +31,9 @@ import type { Child } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-MY", {
+  return new Intl.NumberFormat("en-BH", {
     style: "currency",
-    currency: "MYR",
+    currency: "BHD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)
@@ -185,7 +185,7 @@ export function ChildCard({ child }: { child: Child }) {
             <form onSubmit={handleContribute} className="flex flex-col gap-3 rounded-xl bg-amanah-cream p-4">
               <div className="flex items-center justify-between">
                 <Label htmlFor={`amount-${child.id}`} className="text-sm font-medium text-amanah-plum">
-                  Contribution Amount (MYR)
+                  Contribution Amount (BHD)
                 </Label>
                 <button
                   type="button"
@@ -290,7 +290,7 @@ export function ChildCard({ child }: { child: Child }) {
             </div>
             <div className="flex gap-3">
               <div className="flex flex-1 flex-col gap-1.5">
-                <Label className="text-sm font-medium text-amanah-plum">Target Amount (MYR)</Label>
+                <Label className="text-sm font-medium text-amanah-plum">Target Amount (BHD)</Label>
                 <Input
                   type="number"
                   min="100"

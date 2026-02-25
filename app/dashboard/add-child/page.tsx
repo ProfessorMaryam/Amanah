@@ -112,7 +112,7 @@ export default function AddChildPage() {
               {/* Target Amount */}
               <div className="flex flex-col gap-2">
                 <Label htmlFor="targetAmount" className="text-base font-medium text-amanah-plum">
-                  Target Amount (MYR)
+                  Target Amount (BHD)
                 </Label>
                 <Input
                   id="targetAmount"

@@ -227,7 +227,7 @@ export default function ChildDetailPage({
                 <form onSubmit={handleContribute} className="flex flex-col gap-4 sm:flex-row sm:items-end">
                   <div className="flex flex-1 flex-col gap-2">
                     <Label htmlFor="contribute-amount" className="text-sm font-medium text-amanah-plum">
-                      Amount (MYR)
+                      Amount (BHD)
                     </Label>
                     <Input
                       id="contribute-amount"
@@ -292,7 +292,7 @@ export default function ChildDetailPage({
             </div>
             <div className="flex gap-3">
               <div className="flex flex-1 flex-col gap-1.5">
-                <Label className="text-sm font-medium text-amanah-plum">Target (MYR)</Label>
+                <Label className="text-sm font-medium text-amanah-plum">Target (BHD)</Label>
                 <Input type="number" min="100" value={editTargetAmount} onChange={(e) => setEditTargetAmount(e.target.value)} className="bg-amanah-cream" required />
               </div>
               <div className="flex flex-1 flex-col gap-1.5">

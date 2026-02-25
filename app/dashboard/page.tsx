@@ -8,9 +8,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { UserPlus, PiggyBank, Users, TrendingUp } from "lucide-react"
 
 function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-MY", {
+  return new Intl.NumberFormat("en-BH", {
     style: "currency",
-    currency: "MYR",
+    currency: "BHD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)

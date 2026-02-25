@@ -35,49 +35,77 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
 
   useEffect(() => {
     if (session) {
-      const fetchUser = async () => {
+      const fetchData = async () => {
         try {
           const token = session.access_token
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
           
-          console.log("[AppContext] Fetching user profile...")
-          console.log("[AppContext] API URL:", apiUrl)
-          console.log("[AppContext] Token exists:", !!token)
-          console.log("[AppContext] Token length:", token?.length)
-          console.log("[AppContext] Token preview:", token?.substring(0, 50) + "...")
-          console.log("[AppContext] User email:", session.user?.email)
+          console.log("[AppContext] Fetching user profile and children...")
           
-          const response = await fetch(`${apiUrl}/api/me`, {
+          // Fetch user profile
+          const userResponse = await fetch(`${apiUrl}/api/me`, {
             headers: {
               Authorization: `Bearer ${token}`,
               "X-User-Email": session.user?.email || "",
             },
           })
           
-          console.log("[AppContext] Response status:", response.status)
-          console.log("[AppContext] Response ok:", response.ok)
-          console.log("[AppContext] Response headers:", {
-            "content-type": response.headers.get("content-type"),
-          })
-          
-          const responseText = await response.text()
-          console.log("[AppContext] Raw response body:", responseText)
-          
-          if (response.ok) {
-            const userData = JSON.parse(responseText)
+          if (userResponse.ok) {
+            const userData = await userResponse.json()
             console.log("[AppContext] User data received:", userData)
             setUser((prev) => ({
               ...prev,
               name: userData.fullName || prev.name,
             }))
           } else {
-            console.error("[AppContext] Error response (status:", response.status + "):", responseText)
+            console.error("[AppContext] Failed to fetch user:", userResponse.status)
+          }
+          
+          // Fetch children
+          const childrenResponse = await fetch(`${apiUrl}/api/children`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "X-User-Email": session.user?.email || "",
+            },
+          })
+          
+          if (childrenResponse.ok) {
+            const childrenList = await childrenResponse.json()
+            console.log("[AppContext] Children data received:", childrenList)
+            
+            // Transform backend data to frontend format
+            const transformedChildren: Child[] = childrenList.map((backendChild: any) => ({
+              id: backendChild.id,
+              name: backendChild.name,
+              dateOfBirth: backendChild.dateOfBirth,
+              photoUrl: backendChild.photoUrl,
+              goal: {
+                name: backendChild.goal?.goalType || "Savings Goal",
+                targetAmount: backendChild.goal?.targetAmount || 0,
+                currentAmount: backendChild.savingsBalance || 0,
+                startDate: backendChild.goal?.createdAt || new Date().toISOString().split("T")[0],
+                targetDate: backendChild.goal?.targetDate || new Date().toISOString().split("T")[0],
+                paused: backendChild.goal?.isPaused || false,
+              },
+              contributions: (backendChild.transactions || []).map((tx: any) => ({
+                id: tx.id,
+                date: new Date(tx.date).toISOString().split("T")[0],
+                amount: parseFloat(tx.amount),
+                note: tx.type,
+              })),
+              investment: backendChild.investment || undefined,
+              futureInstructions: backendChild.futureInstructions || undefined,
+            }))
+            
+            setChildrenData(transformedChildren)
+          } else {
+            console.error("[AppContext] Failed to fetch children:", childrenResponse.status)
           }
         } catch (error) {
-          console.error("[AppContext] Failed to fetch user:", error)
+          console.error("[AppContext] Failed to fetch data:", error)
         }
       }
-      fetchUser()
+      fetchData()
     }
   }, [session])
 
