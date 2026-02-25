@@ -15,6 +15,7 @@ export interface SavingsGoal {
   currentAmount: number
   startDate: string
   targetDate: string
+  paused?: boolean
 }
 
 export interface Contribution {

@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { useApp } from "@/lib/app-context"
-import { DashboardHeader } from "@/components/dashboard-header"
 import { ChildCard } from "@/components/child-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -30,8 +29,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader />
-
       <main className="mx-auto max-w-6xl px-4 py-8 lg:px-8">
         {/* Greeting */}
         <div className="mb-8">

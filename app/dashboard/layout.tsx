@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { AppProvider } from "@/lib/app-context"
 import { useAuth } from "@/lib/auth-context"
+import { AppSidebar } from "@/components/app-sidebar"
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -17,8 +18,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-amanah-plum text-lg">Loading…</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-amanah-peach border-t-primary" />
+          <p className="text-sm text-amanah-sage">Loading…</p>
+        </div>
       </div>
     )
   }
@@ -35,7 +39,16 @@ export default function DashboardLayout({
 }) {
   return (
     <AuthGuard>
-      <AppProvider>{children}</AppProvider>
+      <AppProvider>
+        <div className="flex min-h-screen bg-background">
+          <AppSidebar />
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <main className="flex-1 overflow-y-auto">
+              {children}
+            </main>
+          </div>
+        </div>
+      </AppProvider>
     </AuthGuard>
   )
 }

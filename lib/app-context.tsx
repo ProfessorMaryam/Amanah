@@ -4,11 +4,21 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 import type { Child } from "./types"
 import { mockChildren, mockUser } from "./mock-data"
 
+interface ChildUpdates {
+  name?: string
+  dateOfBirth?: string
+  photoUrl?: string
+  goal?: Partial<Child["goal"]>
+}
+
 interface AppContextType {
   user: typeof mockUser
   children: Child[]
   addChild: (child: Omit<Child, "id" | "contributions" | "investment" | "futureInstructions">) => void
+  updateChild: (id: string, updates: ChildUpdates) => void
+  deleteChild: (id: string) => void
   addContribution: (childId: string, amount: number, note?: string) => void
+  togglePausedGoal: (childId: string) => void
   getChild: (id: string) => Child | undefined
   totalSavings: number
 }
@@ -31,6 +41,35 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
     },
     []
   )
+
+  const updateChild = useCallback((id: string, updates: ChildUpdates) => {
+    setChildrenData((prev) =>
+      prev.map((c) => {
+        if (c.id !== id) return c
+        return {
+          ...c,
+          ...(updates.name !== undefined && { name: updates.name }),
+          ...(updates.dateOfBirth !== undefined && { dateOfBirth: updates.dateOfBirth }),
+          ...(updates.photoUrl !== undefined && { photoUrl: updates.photoUrl }),
+          ...(updates.goal !== undefined && { goal: { ...c.goal, ...updates.goal } }),
+        }
+      })
+    )
+  }, [])
+
+  const deleteChild = useCallback((id: string) => {
+    setChildrenData((prev) => prev.filter((c) => c.id !== id))
+  }, [])
+
+  const togglePausedGoal = useCallback((childId: string) => {
+    setChildrenData((prev) =>
+      prev.map((c) =>
+        c.id === childId
+          ? { ...c, goal: { ...c.goal, paused: !c.goal.paused } }
+          : c
+      )
+    )
+  }, [])
 
   const addContribution = useCallback(
     (childId: string, amount: number, note?: string) => {
@@ -73,7 +112,10 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         user: mockUser,
         children: childrenData,
         addChild,
+        updateChild,
+        deleteChild,
         addContribution,
+        togglePausedGoal,
         getChild,
         totalSavings,
       }}

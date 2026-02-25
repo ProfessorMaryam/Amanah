@@ -17,6 +17,7 @@ export const mockChildren: Child[] = [
       currentAmount: 18750,
       startDate: "2020-01-01",
       targetDate: "2033-09-01",
+      paused: false,
     },
     contributions: [
       { id: "c1", date: "2026-02-01", amount: 500, note: "Monthly savings" },
@@ -52,6 +53,7 @@ export const mockChildren: Child[] = [
       currentAmount: 8400,
       startDate: "2021-06-01",
       targetDate: "2036-06-01",
+      paused: false,
     },
     contributions: [
       { id: "c7", date: "2026-02-01", amount: 300, note: "Monthly savings" },
@@ -86,6 +88,7 @@ export const mockChildren: Child[] = [
       currentAmount: 4200,
       startDate: "2022-01-01",
       targetDate: "2038-11-01",
+      paused: false,
     },
     contributions: [
       { id: "c12", date: "2026-02-01", amount: 200, note: "Monthly savings" },
@@ -106,6 +109,7 @@ export const mockChildren: Child[] = [
       currentAmount: 12800,
       startDate: "2022-01-01",
       targetDate: "2030-01-01",
+      paused: false,
     },
     contributions: [
       { id: "c16", date: "2026-02-01", amount: 400, note: "Monthly savings" },
