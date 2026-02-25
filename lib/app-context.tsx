@@ -1,8 +1,9 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
 import type { Child, Investment, FutureInstructions } from "./types"
 import { mockChildren, mockUser } from "./mock-data"
+import { useAuth } from "./auth-context"
 
 interface ChildUpdates {
   name?: string
@@ -28,7 +29,57 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export function AppProvider({ children: childrenNode }: { children: ReactNode }) {
+  const [user, setUser] = useState(mockUser)
   const [childrenData, setChildrenData] = useState<Child[]>(mockChildren)
+  const { session } = useAuth()
+
+  useEffect(() => {
+    if (session) {
+      const fetchUser = async () => {
+        try {
+          const token = session.access_token
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+          
+          console.log("[AppContext] Fetching user profile...")
+          console.log("[AppContext] API URL:", apiUrl)
+          console.log("[AppContext] Token exists:", !!token)
+          console.log("[AppContext] Token length:", token?.length)
+          console.log("[AppContext] Token preview:", token?.substring(0, 50) + "...")
+          console.log("[AppContext] User email:", session.user?.email)
+          
+          const response = await fetch(`${apiUrl}/api/me`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "X-User-Email": session.user?.email || "",
+            },
+          })
+          
+          console.log("[AppContext] Response status:", response.status)
+          console.log("[AppContext] Response ok:", response.ok)
+          console.log("[AppContext] Response headers:", {
+            "content-type": response.headers.get("content-type"),
+          })
+          
+          const responseText = await response.text()
+          console.log("[AppContext] Raw response body:", responseText)
+          
+          if (response.ok) {
+            const userData = JSON.parse(responseText)
+            console.log("[AppContext] User data received:", userData)
+            setUser((prev) => ({
+              ...prev,
+              name: userData.fullName || prev.name,
+            }))
+          } else {
+            console.error("[AppContext] Error response (status:", response.status + "):", responseText)
+          }
+        } catch (error) {
+          console.error("[AppContext] Failed to fetch user:", error)
+        }
+      }
+      fetchUser()
+    }
+  }, [session])
 
   const addChild = useCallback(
     (child: Omit<Child, "id" | "contributions" | "investment" | "futureInstructions">) => {
@@ -123,7 +174,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
   return (
     <AppContext.Provider
       value={{
-        user: mockUser,
+        user,
         children: childrenData,
         addChild,
         updateChild,
