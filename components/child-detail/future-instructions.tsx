@@ -50,14 +50,14 @@ export function FutureInstructions({ instructions }: { instructions?: FutureInst
           </div>
         </div>
 
-        {/* Notes */}
+        {/* Instructions */}
         <div className="flex flex-col gap-2 rounded-xl bg-amanah-cream p-4">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-amanah-sage" />
-            <p className="text-sm font-medium text-amanah-sage">Written Notes</p>
+            <p className="text-sm font-medium text-amanah-sage">Written Instructions</p>
           </div>
           <p className="text-base leading-relaxed text-amanah-plum">
-            {instructions.notes}
+            {instructions.instructions}
           </p>
         </div>
 

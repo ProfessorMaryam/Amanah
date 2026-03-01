@@ -19,15 +19,12 @@ interface SavingsChartProps {
   currentAmount: number
 }
 
-export function SavingsChart({ contributions, currentAmount }: SavingsChartProps) {
-  // Build cumulative data from oldest to newest
-  const sorted = [...contributions].reverse()
-  let cumulative = currentAmount
-  // Walk backwards from current to rebuild history
-  for (const c of [...contributions]) {
-    cumulative -= c.amount
-  }
-
+export function SavingsChart({ contributions }: SavingsChartProps) {
+  // Sort oldest-first and accumulate running total from zero
+  const sorted = [...contributions].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  )
+  let cumulative = 0
   const data = sorted.map((c) => {
     cumulative += c.amount
     const date = new Date(c.date)

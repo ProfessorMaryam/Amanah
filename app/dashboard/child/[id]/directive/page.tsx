@@ -23,7 +23,10 @@ export default function DirectivePage({
   const [editing, setEditing] = useState(!existing)
   const [guardianName, setGuardianName] = useState(existing?.guardianName ?? "")
   const [guardianContact, setGuardianContact] = useState(existing?.guardianContact ?? "")
-  const [notes, setNotes] = useState(existing?.notes ?? "")
+  // Field renamed from 'notes' to 'instructions' to match the DB column and FutureInstructions type
+  const [instructions, setInstructions] = useState(existing?.instructions ?? "")
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (!child) {
     return (
@@ -38,24 +41,30 @@ export default function DirectivePage({
   function openEdit() {
     setGuardianName(child!.futureInstructions?.guardianName ?? "")
     setGuardianContact(child!.futureInstructions?.guardianContact ?? "")
-    setNotes(child!.futureInstructions?.notes ?? "")
+    setInstructions(child!.futureInstructions?.instructions ?? "")
+    setError(null)
     setEditing(true)
   }
 
-  function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    setFutureInstructions(child!.id, {
-      guardianName,
-      guardianContact,
-      notes,
-    })
-    setEditing(false)
+    setError(null)
+    setSubmitting(true)
+    console.log("[DirectivePage] setFutureInstructions childId=%s guardian=%s", id, guardianName)
+    try {
+      await setFutureInstructions(child!.id, { guardianName, guardianContact, instructions })
+      setEditing(false)
+    } catch (err: any) {
+      console.error("[DirectivePage] setFutureInstructions error:", err)
+      setError(err?.message ?? "Failed to save directive.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <div className="min-h-screen bg-background">
       <main className="mx-auto max-w-3xl px-4 py-8 lg:px-8">
-        {/* Back */}
         <Link
           href={`/dashboard/child/${id}`}
           className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-amanah-sage hover:text-primary transition-colors"
@@ -67,7 +76,7 @@ export default function DirectivePage({
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-primary">Fund Directive</h1>
-            <p className="mt-1 text-sm text-amanah-sage">{child.name} · Guardian & fund management instructions</p>
+            <p className="mt-1 text-sm text-amanah-sage">{child.name} · Guardian &amp; fund management instructions</p>
           </div>
           {existing && !editing && (
             <Button variant="outline" size="sm" className="gap-2" onClick={openEdit}>
@@ -77,7 +86,6 @@ export default function DirectivePage({
           )}
         </div>
 
-        {/* Disclaimer */}
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-amanah-rose/30 bg-amanah-rose/5 px-4 py-3">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amanah-rose" />
           <p className="text-sm leading-relaxed text-amanah-plum">
@@ -116,7 +124,7 @@ export default function DirectivePage({
                   <FileText className="h-4 w-4 text-amanah-sage" />
                   <p className="text-xs font-medium text-amanah-sage">Written Instructions</p>
                 </div>
-                <p className="text-sm leading-relaxed text-amanah-plum">{existing.notes}</p>
+                <p className="text-sm leading-relaxed text-amanah-plum">{existing.instructions}</p>
               </div>
             </CardContent>
           </Card>
@@ -133,11 +141,12 @@ export default function DirectivePage({
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSave} className="flex flex-col gap-5">
+                {error && (
+                  <p className="rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive">{error}</p>
+                )}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
-                    <Label className="text-sm font-medium text-amanah-plum">
-                      Guardian / Executor Name
-                    </Label>
+                    <Label className="text-sm font-medium text-amanah-plum">Guardian / Executor Name</Label>
                     <Input
                       placeholder="Full name"
                       value={guardianName}
@@ -147,11 +156,9 @@ export default function DirectivePage({
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label className="text-sm font-medium text-amanah-plum">
-                      Contact Number
-                    </Label>
+                    <Label className="text-sm font-medium text-amanah-plum">Contact Number</Label>
                     <Input
-                      placeholder="+60 12-345-6789"
+                      placeholder="+973 3XXX XXXX"
                       value={guardianContact}
                       onChange={(e) => setGuardianContact(e.target.value)}
                       className="bg-amanah-cream"
@@ -161,13 +168,11 @@ export default function DirectivePage({
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <Label className="text-sm font-medium text-amanah-plum">
-                    Written Instructions
-                  </Label>
+                  <Label className="text-sm font-medium text-amanah-plum">Written Instructions</Label>
                   <Textarea
                     placeholder="Describe how the fund should be managed, what it should be used for, and any wishes you have for your child's future..."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
                     className="min-h-36 bg-amanah-cream text-sm leading-relaxed"
                     required
                   />
@@ -179,8 +184,8 @@ export default function DirectivePage({
                       Cancel
                     </Button>
                   )}
-                  <Button type="submit" className="flex-1">
-                    {existing ? "Save Changes" : "Save Directive"}
+                  <Button type="submit" disabled={submitting} className="flex-1">
+                    {submitting ? "Saving..." : existing ? "Save Changes" : "Save Directive"}
                   </Button>
                 </div>
               </form>
@@ -188,7 +193,6 @@ export default function DirectivePage({
           </Card>
         )}
 
-        {/* Empty state (no directive, not editing — shouldn't normally show) */}
         {!existing && !editing && (
           <Card className="border-0 bg-card shadow-lg">
             <CardContent className="flex flex-col items-center gap-4 py-16">

@@ -21,7 +21,7 @@ public class InvestmentPortfolio {
     private UUID childId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "portfolio_type", nullable = false)
+    @Column(name = "portfolio_type", nullable = false, columnDefinition = "portfolio_type")
     private PortfolioType portfolioType;
 
     @Column(name = "allocation_percentage", nullable = false)

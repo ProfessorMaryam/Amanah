@@ -24,6 +24,14 @@ public class User {
     @Column(name = "email")
     private String email;
 
+    /**
+     * Maps the user_role enum in the DB (parent | child | admin).
+     * Stored as a string to survive future enum additions without migration.
+     */
+    @Builder.Default
+    @Column(name = "role", nullable = false, columnDefinition = "user_role")
+    private String role = "parent";
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private OffsetDateTime createdAt;
 }

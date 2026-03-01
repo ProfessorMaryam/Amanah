@@ -4,6 +4,7 @@ import com.amanah.entity.Child;
 import com.amanah.entity.Goal;
 import com.amanah.entity.InvestmentPortfolio;
 import com.amanah.repository.ChildRepository;
+import com.amanah.repository.GoalOwnerRepository;
 import com.amanah.repository.GoalRepository;
 import com.amanah.repository.InvestmentPortfolioRepository;
 import com.amanah.repository.TransactionRepository;
@@ -21,13 +22,13 @@ import java.util.*;
 public class DashboardService {
 
     private final ChildRepository childRepository;
+    private final GoalOwnerRepository goalOwnerRepository;
     private final GoalRepository goalRepository;
     private final TransactionRepository transactionRepository;
     private final InvestmentPortfolioRepository portfolioRepository;
 
     public Map<String, Object> getDashboard(UUID parentId) {
         List<Child> children = childRepository.findAllByParentId(parentId);
-        List<UUID> childIds = children.stream().map(Child::getId).toList();
 
         List<Map<String, Object>> childSummaries = new ArrayList<>();
         BigDecimal totalFamilySavings = BigDecimal.ZERO;
@@ -40,7 +41,8 @@ public class DashboardService {
             BigDecimal total = savings.add(investment);
             totalFamilySavings = totalFamilySavings.add(total);
 
-            Optional<Goal> goalOpt = goalRepository.findByChildId(child.getId());
+            Optional<Goal> goalOpt = goalOwnerRepository.findByChildId(child.getId())
+                    .flatMap(owner -> goalRepository.findById(owner.getGoalId()));
             Map<String, Object> summary = new LinkedHashMap<>();
             summary.put("childId", child.getId());
             summary.put("name", child.getName());

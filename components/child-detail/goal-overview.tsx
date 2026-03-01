@@ -42,7 +42,7 @@ export function GoalOverview({ goal }: { goal: SavingsGoal }) {
   const monthsLeft = getMonthsRemaining(goal.targetDate)
   const remaining = goal.targetAmount - goal.currentAmount
   const monthlyNeeded = monthsLeft > 0 ? remaining / monthsLeft : 0
-  const isPaused = goal.paused ?? false
+  const isPaused = goal.isPaused ?? false
   const projectedCompletion = getProjectedCompletion(remaining, monthlyNeeded, isPaused)
 
   return (

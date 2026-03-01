@@ -1,3 +1,9 @@
+// Goal types must match Goal.GoalType enum in the backend
+export type GoalType = "UNIVERSITY" | "CAR" | "WEDDING" | "BUSINESS" | "GENERAL"
+
+// Portfolio types must match InvestmentPortfolio.PortfolioType enum in the backend
+export type PortfolioType = "CONSERVATIVE" | "BALANCED" | "GROWTH"
+
 export interface Child {
   id: string
   name: string
@@ -10,39 +16,41 @@ export interface Child {
 }
 
 export interface SavingsGoal {
-  name: string
+  /** Matches goal_type column / GoalType enum */
+  goalType: GoalType
   targetAmount: number
   currentAmount: number
+  /** ISO date string from goal.created_at */
   startDate: string
   targetDate: string
-  paused?: boolean
+  monthlyContribution: number
+  isPaused?: boolean
 }
 
 export interface Contribution {
   id: string
   date: string
   amount: number
-  note?: string
+  /** transaction type: MANUAL | AUTO */
+  type?: string
 }
 
 export interface Investment {
-  active: boolean
-  allocation: {
-    label: string
-    percentage: number
-  }[]
+  portfolioType: PortfolioType
+  allocationPercentage: number
   currentValue: number
-  growthPercentage: number
 }
 
 export interface FutureInstructions {
   guardianName: string
   guardianContact: string
-  notes: string
+  /** Matches 'instructions' column in fund_directives table */
+  instructions: string
 }
 
 export interface User {
   id: string
   name: string
   email: string
+  role?: string
 }

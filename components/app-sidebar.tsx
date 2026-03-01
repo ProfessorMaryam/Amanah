@@ -80,12 +80,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           label="Dashboard"
           active={pathname === "/dashboard"}
         />
-        <NavLink
-          href="/dashboard/add-child"
-          icon={UserPlus}
-          label="Add Child"
-          active={pathname === "/dashboard/add-child"}
-        />
+        {user.role !== "child" && (
+          <NavLink
+            href="/dashboard/add-child"
+            icon={UserPlus}
+            label="Add Child"
+            active={pathname === "/dashboard/add-child"}
+          />
+        )}
       </nav>
 
       {/* Child sub-navigation (shown when viewing a child) */}

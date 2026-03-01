@@ -49,7 +49,7 @@ export function ContributionHistory({ contributions }: { contributions: Contribu
               <TableRow className="border-amanah-peach hover:bg-transparent">
                 <TableHead className="text-base font-semibold text-primary">Date</TableHead>
                 <TableHead className="text-base font-semibold text-primary">Amount</TableHead>
-                <TableHead className="text-base font-semibold text-primary">Note</TableHead>
+                <TableHead className="text-base font-semibold text-primary">Type</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -62,7 +62,7 @@ export function ContributionHistory({ contributions }: { contributions: Contribu
                     {formatCurrency(c.amount)}
                   </TableCell>
                   <TableCell className="py-4 text-base text-amanah-sage">
-                    {c.note || "—"}
+                    {c.type || "—"}
                   </TableCell>
                 </TableRow>
               ))}

@@ -3,12 +3,12 @@
 import { use, useState } from "react"
 import Link from "next/link"
 import { useApp } from "@/lib/app-context"
+import type { PortfolioType } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Briefcase, TrendingUp, ShieldCheck, Zap, Pencil } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { Investment } from "@/lib/types"
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-BH", {
@@ -19,9 +19,23 @@ function formatCurrency(amount: number) {
   }).format(amount)
 }
 
-const PROFILES = [
+interface ProfileDef {
+  key: PortfolioType
+  label: string
+  icon: React.ElementType
+  rate: number
+  description: string
+  /** Informational allocation breakdown — display only, not sent to backend */
+  allocation: { label: string; percentage: number }[]
+  color: string
+  badgeColor: string
+  /** Default allocation % of each contribution routed to investments */
+  defaultAllocationPercent: number
+}
+
+const PROFILES: ProfileDef[] = [
   {
-    key: "conservative",
+    key: "CONSERVATIVE",
     label: "Conservative",
     icon: ShieldCheck,
     rate: 4,
@@ -31,11 +45,12 @@ const PROFILES = [
       { label: "Index Funds", percentage: 30 },
       { label: "Savings Account", percentage: 20 },
     ],
+    defaultAllocationPercent: 20,
     color: "border-secondary bg-secondary/10",
     badgeColor: "bg-secondary/20 text-primary",
   },
   {
-    key: "balanced",
+    key: "BALANCED",
     label: "Balanced",
     icon: TrendingUp,
     rate: 7,
@@ -45,11 +60,12 @@ const PROFILES = [
       { label: "Bonds", percentage: 30 },
       { label: "Savings Account", percentage: 20 },
     ],
+    defaultAllocationPercent: 40,
     color: "border-accent bg-accent/10",
     badgeColor: "bg-accent/20 text-accent-foreground",
   },
   {
-    key: "growth",
+    key: "GROWTH",
     label: "Growth",
     icon: Zap,
     rate: 10,
@@ -59,6 +75,7 @@ const PROFILES = [
       { label: "Bonds", percentage: 20 },
       { label: "Savings Account", percentage: 10 },
     ],
+    defaultAllocationPercent: 60,
     color: "border-amanah-sky bg-amanah-sky/10",
     badgeColor: "bg-amanah-sky/20 text-primary",
   },
@@ -75,7 +92,9 @@ export default function InvestmentPage({
   const { getChild, setInvestment } = useApp()
   const child = getChild(id)
   const [selecting, setSelecting] = useState(false)
-  const [selected, setSelected] = useState<string | null>(null)
+  const [selected, setSelected] = useState<PortfolioType | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (!child) {
     return (
@@ -87,32 +106,35 @@ export default function InvestmentPage({
     )
   }
 
-  const currentProfile = child.investment?.active
-    ? PROFILES.find((p) =>
-        p.allocation[0].label === child.investment!.allocation[0].label
-      ) ?? null
+  const currentProfile = child.investment
+    ? PROFILES.find((p) => p.key === child.investment!.portfolioType) ?? null
     : null
 
-  function handleSave() {
+  async function handleSave() {
+    if (!selected) return
     const profile = PROFILES.find((p) => p.key === selected)
     if (!profile) return
-    const investment: Investment = {
-      active: true,
-      allocation: profile.allocation,
-      currentValue: child!.investment?.currentValue ?? 0,
-      growthPercentage: child!.investment?.growthPercentage ?? 0,
+    setError(null)
+    setSubmitting(true)
+    console.log("[InvestmentPage] setInvestment childId=%s type=%s alloc=%d",
+      id, profile.key, profile.defaultAllocationPercent)
+    try {
+      await setInvestment(child!.id, profile.key, profile.defaultAllocationPercent)
+      setSelecting(false)
+      setSelected(null)
+    } catch (err: any) {
+      console.error("[InvestmentPage] setInvestment error:", err)
+      setError(err?.message ?? "Failed to save portfolio.")
+    } finally {
+      setSubmitting(false)
     }
-    setInvestment(child!.id, investment)
-    setSelecting(false)
-    setSelected(null)
   }
 
-  const showSelector = selecting || !child.investment?.active
+  const showSelector = selecting || !child.investment
 
   return (
     <div className="min-h-screen bg-background">
       <main className="mx-auto max-w-3xl px-4 py-8 lg:px-8">
-        {/* Back */}
         <Link
           href={`/dashboard/child/${id}`}
           className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-amanah-sage hover:text-primary transition-colors"
@@ -126,7 +148,7 @@ export default function InvestmentPage({
             <h1 className="text-3xl font-bold text-primary">Investment Portfolio</h1>
             <p className="mt-1 text-sm text-amanah-sage">{child.name} · Simulated growth only — no real investments</p>
           </div>
-          {child.investment?.active && !selecting && (
+          {child.investment && !selecting && (
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setSelecting(true)}>
               <Pencil className="h-4 w-4" />
               Change Profile
@@ -134,8 +156,12 @@ export default function InvestmentPage({
           )}
         </div>
 
-        {/* Current portfolio summary (if active and not selecting) */}
-        {child.investment?.active && !selecting && (
+        {error && (
+          <p className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>
+        )}
+
+        {/* Current portfolio summary */}
+        {child.investment && !selecting && (
           <Card className="mb-8 border-0 bg-card shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-xl text-primary">
@@ -157,38 +183,38 @@ export default function InvestmentPage({
                 <div className="flex items-center gap-2 rounded-xl bg-accent/20 px-4 py-3">
                   <TrendingUp className="h-5 w-5 text-accent-foreground" />
                   <span className="text-xl font-bold text-accent-foreground">
-                    +{child.investment.growthPercentage}%
+                    {child.investment.allocationPercentage}%
                   </span>
-                  <span className="text-sm text-amanah-sage">growth</span>
-                </div>
-              </div>
-
-              {/* Allocation bar */}
-              <div className="flex flex-col gap-3">
-                <p className="text-sm font-semibold text-amanah-plum">Asset Allocation</p>
-                <div className="flex h-4 overflow-hidden rounded-full">
-                  {child.investment.allocation.map((a, i) => (
-                    <div
-                      key={a.label}
-                      className={cn("h-full", allocationColors[i % allocationColors.length])}
-                      style={{ width: `${a.percentage}%` }}
-                    />
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-4">
-                  {child.investment.allocation.map((a, i) => (
-                    <div key={a.label} className="flex items-center gap-2">
-                      <div className={cn("h-3 w-3 rounded-full", allocationColors[i % allocationColors.length])} />
-                      <span className="text-sm text-amanah-plum">{a.label}: {a.percentage}%</span>
-                    </div>
-                  ))}
+                  <span className="text-sm text-amanah-sage">allocated</span>
                 </div>
               </div>
 
               {currentProfile && (
-                <p className="text-sm text-amanah-sage">
-                  Expected annual return: <span className="font-semibold text-primary">{currentProfile.rate}%</span>
-                </p>
+                <>
+                  <div className="flex flex-col gap-3">
+                    <p className="text-sm font-semibold text-amanah-plum">Asset Allocation</p>
+                    <div className="flex h-4 overflow-hidden rounded-full">
+                      {currentProfile.allocation.map((a, i) => (
+                        <div
+                          key={a.label}
+                          className={cn("h-full", allocationColors[i % allocationColors.length])}
+                          style={{ width: `${a.percentage}%` }}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-4">
+                      {currentProfile.allocation.map((a, i) => (
+                        <div key={a.label} className="flex items-center gap-2">
+                          <div className={cn("h-3 w-3 rounded-full", allocationColors[i % allocationColors.length])} />
+                          <span className="text-sm text-amanah-plum">{a.label}: {a.percentage}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-sm text-amanah-sage">
+                    Expected annual return: <span className="font-semibold text-primary">{currentProfile.rate}%</span>
+                  </p>
+                </>
               )}
             </CardContent>
           </Card>
@@ -198,9 +224,9 @@ export default function InvestmentPage({
         {showSelector && (
           <>
             <p className="mb-4 text-sm text-amanah-sage">
-              {child.investment?.active
+              {child.investment
                 ? "Select a new risk profile for this portfolio."
-                : "Choose a risk profile to set up a simulated investment portfolio for " + child.name + "."}
+                : `Choose a risk profile to set up a simulated investment portfolio for ${child.name}.`}
             </p>
             <div className="flex flex-col gap-4">
               {PROFILES.map((profile) => {
@@ -228,12 +254,9 @@ export default function InvestmentPage({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1">
                           <span className="text-base font-bold text-primary">{profile.label}</span>
-                          <Badge className={cn("text-xs", profile.badgeColor)}>
-                            {profile.rate}% p.a.
-                          </Badge>
+                          <Badge className={cn("text-xs", profile.badgeColor)}>{profile.rate}% p.a.</Badge>
                         </div>
                         <p className="text-sm text-amanah-sage mb-3">{profile.description}</p>
-                        {/* Mini allocation bar */}
                         <div className="flex h-2.5 overflow-hidden rounded-full">
                           {profile.allocation.map((a, i) => (
                             <div
@@ -266,10 +289,10 @@ export default function InvestmentPage({
               )}
               <Button
                 className="flex-1"
-                disabled={!selected}
+                disabled={!selected || submitting}
                 onClick={handleSave}
               >
-                {child.investment?.active ? "Update Portfolio" : "Set Up Portfolio"}
+                {submitting ? "Saving..." : child.investment ? "Update Portfolio" : "Set Up Portfolio"}
               </Button>
             </div>
           </>

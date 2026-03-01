@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useApp } from "@/lib/app-context"
 import { ChildCard } from "@/components/child-card"
+import { ChildDashboard } from "@/components/child-dashboard"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { UserPlus, PiggyBank, Users, TrendingUp } from "lucide-react"
@@ -18,6 +19,11 @@ function formatCurrency(amount: number) {
 
 export default function DashboardPage() {
   const { user, children, totalSavings } = useApp()
+
+  // Child-role users see their own whimsical savings view
+  if (user.role === "child") {
+    return <ChildDashboard />
+  }
 
   const totalTarget = children.reduce(
     (sum, c) => sum + c.goal.targetAmount,

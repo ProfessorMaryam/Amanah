@@ -1,10 +1,15 @@
 package com.amanah.service;
 
 import com.amanah.entity.Goal;
+import com.amanah.entity.GoalOwner;
+import com.amanah.repository.GoalOwnerRepository;
 import com.amanah.repository.GoalRepository;
 import com.amanah.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -17,23 +22,48 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class GoalService {
 
+    private static final Logger log = LoggerFactory.getLogger(GoalService.class);
+
     private final GoalRepository goalRepository;
+    private final GoalOwnerRepository goalOwnerRepository;
     private final TransactionRepository transactionRepository;
 
-    public Goal getGoalByChild(UUID childId) {
-        return goalRepository.findByChildId(childId)
-                .orElseThrow(() -> new RuntimeException("No goal found for child"));
-    }
-
+    /**
+     * Resolve a child's current goal via the goal_owners join table.
+     * Each child has at most one goal_owner row, and thus at most one goal.
+     */
     public Optional<Goal> findByChild(UUID childId) {
-        return goalRepository.findByChildId(childId);
+        log.debug("[GoalService] findByChild childId={}", childId);
+        return goalOwnerRepository.findByChildId(childId)
+                .flatMap(owner -> goalRepository.findById(owner.getGoalId()));
     }
 
-    public Goal createOrUpdateGoal(UUID childId, Goal.GoalType type,
+    public Goal getGoalByChild(UUID childId) {
+        log.debug("[GoalService] getGoalByChild childId={}", childId);
+        return findByChild(childId)
+                .orElseThrow(() -> {
+                    log.warn("[GoalService] No goal found for childId={}", childId);
+                    return new RuntimeException("No goal found for child");
+                });
+    }
+
+    /**
+     * Create or update the goal for a child.
+     * Inserts into goals and upserts the goal_owners row linking it to the child + owner.
+     */
+    @Transactional
+    public Goal createOrUpdateGoal(UUID childId, UUID ownerId, Goal.GoalType type,
                                    BigDecimal targetAmount, LocalDate targetDate,
                                    BigDecimal monthlyOverride, boolean paused) {
-        Goal goal = goalRepository.findByChildId(childId).orElse(new Goal());
-        goal.setChildId(childId);
+        log.info("[GoalService] createOrUpdateGoal childId={} ownerId={} type={} target={} date={} paused={}",
+                childId, ownerId, type, targetAmount, targetDate, paused);
+
+        // Find existing goal via goal_owners, or create a brand-new Goal row
+        Optional<GoalOwner> existingOwner = goalOwnerRepository.findByChildId(childId);
+        Goal goal = existingOwner
+                .flatMap(o -> goalRepository.findById(o.getGoalId()))
+                .orElse(new Goal());
+
         goal.setGoalType(type);
         goal.setTargetAmount(targetAmount);
         goal.setTargetDate(targetDate);
@@ -45,7 +75,24 @@ public class GoalService {
             goal.setMonthlyContribution(suggestedMonthly(childId, targetAmount, targetDate));
         }
 
-        return goalRepository.save(goal);
+        goal = goalRepository.save(goal);
+        log.info("[GoalService] Saved goal id={}", goal.getId());
+
+        // Upsert goal_owners row — only insert if none existed yet
+        if (existingOwner.isEmpty()) {
+            GoalOwner owner = GoalOwner.builder()
+                    .goalId(goal.getId())
+                    .ownerId(ownerId)
+                    .childId(childId)
+                    .build();
+            goalOwnerRepository.save(owner);
+            log.info("[GoalService] Created goal_owners row goalId={} ownerId={} childId={}",
+                    goal.getId(), ownerId, childId);
+        } else {
+            log.debug("[GoalService] goal_owners row already exists for childId={}", childId);
+        }
+
+        return goal;
     }
 
     public BigDecimal suggestedMonthly(UUID childId, BigDecimal targetAmount, LocalDate targetDate) {
