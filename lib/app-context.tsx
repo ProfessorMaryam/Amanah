@@ -126,9 +126,12 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
 
   useEffect(() => {
     if (!session) {
+      console.log("[AppContext] No session — loading mock data")
       setChildrenData(mockChildren)
       return
     }
+
+    console.log("[AppContext] Session detected, user:", session.user?.email)
 
     const controller = new AbortController()
 
@@ -136,37 +139,66 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
       try {
         const token = session.access_token
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+        console.log("[AppContext] API URL:", apiUrl)
+        console.log("[AppContext] Token (first 20 chars):", token?.slice(0, 20))
+
         const headers = {
           Authorization: `Bearer ${token}`,
           "X-User-Email": session.user?.email ?? "",
         }
 
         // Fetch user profile
+        console.log("[AppContext] Fetching /api/me ...")
         const userResponse = await fetch(`${apiUrl}/api/me`, { headers, signal: controller.signal })
+        console.log("[AppContext] /api/me status:", userResponse.status)
         if (userResponse.ok) {
           const userData: BackendUser = await userResponse.json()
+          console.log("[AppContext] /api/me response:", userData)
           setUser((prev) => ({ ...prev, name: userData.fullName ?? prev.name }))
+        } else {
+          const errText = await userResponse.text()
+          console.error("[AppContext] /api/me error body:", errText)
         }
 
         // Fetch children list
+        console.log("[AppContext] Fetching /api/children ...")
         const childrenResponse = await fetch(`${apiUrl}/api/children`, { headers, signal: controller.signal })
-        if (!childrenResponse.ok) return
+        console.log("[AppContext] /api/children status:", childrenResponse.status)
+        if (!childrenResponse.ok) {
+          const errText = await childrenResponse.text()
+          console.error("[AppContext] /api/children error body:", errText)
+          return
+        }
 
         const childrenList: BackendChild[] = await childrenResponse.json()
+        console.log("[AppContext] Children list:", childrenList)
+
+        if (childrenList.length === 0) {
+          console.warn("[AppContext] No children returned from backend — setting empty list")
+          setChildrenData([])
+          return
+        }
 
         // Fetch full details for each child
         const childrenWithDetails = await Promise.all(
           childrenList.map(async (backendChild) => {
             try {
+              console.log(`[AppContext] Fetching details for child ${backendChild.id} (${backendChild.name}) ...`)
               const detailResponse = await fetch(`${apiUrl}/api/children/${backendChild.id}`, {
                 headers,
                 signal: controller.signal,
               })
+              console.log(`[AppContext] /api/children/${backendChild.id} status:`, detailResponse.status)
               if (detailResponse.ok) {
-                return (await detailResponse.json()) as BackendChildDetail
+                const detail = (await detailResponse.json()) as BackendChildDetail
+                console.log(`[AppContext] Detail for ${backendChild.name}:`, detail)
+                return detail
+              } else {
+                const errText = await detailResponse.text()
+                console.error(`[AppContext] Detail error for ${backendChild.name}:`, errText)
               }
-            } catch {
-              // detail fetch failed, fall back to minimal shape
+            } catch (err) {
+              console.error(`[AppContext] Detail fetch threw for ${backendChild.name}:`, err)
             }
             return { child: backendChild } as BackendChildDetail
           })
@@ -178,10 +210,10 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
           const transactions = details.transactions ?? []
           const savingsBalance = details.savingsBalance ?? 0
 
-          return {
+          const transformed = {
             id: backendChild.id,
             name: backendChild.name,
-            dateOfBirth: backendChild.dateOfBirth ?? undefined,
+            dateOfBirth: backendChild.dateOfBirth ?? "",
             photoUrl: backendChild.photoUrl ?? undefined,
             goal: {
               name: goal?.goalType ?? "Savings Goal",
@@ -207,8 +239,12 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
                 }
               : undefined,
           }
+
+          console.log(`[AppContext] Transformed child "${backendChild.name}":`, transformed)
+          return transformed
         })
 
+        console.log("[AppContext] Setting children data:", transformedChildren.length, "children")
         setChildrenData(transformedChildren)
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
