@@ -4,6 +4,7 @@ import com.amanah.dto.*;
 import com.amanah.entity.*;
 import com.amanah.repository.*;
 import com.amanah.service.*;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -35,14 +36,14 @@ public class ChildController {
 
     @PostMapping
     public ResponseEntity<Child> create(@AuthenticationPrincipal UUID parentId,
-                                        @RequestBody ChildRequest req) {
-        return ResponseEntity.ok(childService.addChild(parentId, req.name(), req.dateOfBirth(), req.photoUrl()));
+                                        @Valid @RequestBody ChildRequest req) {
+        return ResponseEntity.status(201).body(childService.addChild(parentId, req.name(), req.dateOfBirth(), req.photoUrl()));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Child> update(@AuthenticationPrincipal UUID parentId,
                                         @PathVariable UUID id,
-                                        @RequestBody ChildRequest req) {
+                                        @Valid @RequestBody ChildRequest req) {
         return ResponseEntity.ok(childService.updateChild(id, parentId, req.name(), req.dateOfBirth(), req.photoUrl()));
     }
 
@@ -90,7 +91,7 @@ public class ChildController {
     @PostMapping("/{id}/goal")
     public ResponseEntity<Goal> setGoal(@AuthenticationPrincipal UUID parentId,
                                         @PathVariable UUID id,
-                                        @RequestBody GoalRequest req) {
+                                        @Valid @RequestBody GoalRequest req) {
         childService.getChild(id, parentId); // ownership check
         return ResponseEntity.ok(goalService.createOrUpdateGoal(
                 id, req.goalType(), req.targetAmount(), req.targetDate(), req.monthlyContribution(), req.paused()));
@@ -101,7 +102,7 @@ public class ChildController {
     @PostMapping("/{id}/contribute")
     public ResponseEntity<Transaction> contribute(@AuthenticationPrincipal UUID parentId,
                                                   @PathVariable UUID id,
-                                                  @RequestBody ContributeRequest req) {
+                                                  @Valid @RequestBody ContributeRequest req) {
         childService.getChild(id, parentId); // ownership check
         return ResponseEntity.ok(contributionService.contribute(id, req.amount(), Transaction.TransactionType.MANUAL));
     }
@@ -111,7 +112,7 @@ public class ChildController {
     @PostMapping("/{id}/investment")
     public ResponseEntity<InvestmentPortfolio> setInvestment(@AuthenticationPrincipal UUID parentId,
                                                               @PathVariable UUID id,
-                                                              @RequestBody InvestmentRequest req) {
+                                                              @Valid @RequestBody InvestmentRequest req) {
         childService.getChild(id, parentId);
         InvestmentPortfolio portfolio = portfolioRepository.findByChildId(id).orElse(new InvestmentPortfolio());
         portfolio.setChildId(id);
@@ -133,7 +134,7 @@ public class ChildController {
     @PostMapping("/{id}/directive")
     public ResponseEntity<FundDirective> setDirective(@AuthenticationPrincipal UUID parentId,
                                                        @PathVariable UUID id,
-                                                       @RequestBody FundDirectiveRequest req) {
+                                                       @Valid @RequestBody FundDirectiveRequest req) {
         childService.getChild(id, parentId);
         return ResponseEntity.ok(directiveService.save(id, req.guardianName(), req.guardianContact(), req.instructions()));
     }

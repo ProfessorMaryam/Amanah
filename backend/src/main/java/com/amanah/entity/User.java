@@ -24,6 +24,15 @@ public class User {
     @Column(name = "email")
     private String email;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private UserRole role = UserRole.parent;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private OffsetDateTime createdAt;
+
+    public enum UserRole {
+        parent, child
+    }
 }

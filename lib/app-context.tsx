@@ -5,6 +5,97 @@ import type { Child, Investment, FutureInstructions } from "./types"
 import { mockChildren, mockUser } from "./mock-data"
 import { useAuth } from "./auth-context"
 
+// ----- Backend response shapes -----
+
+interface BackendChild {
+  id: string
+  name: string
+  dateOfBirth: string | null
+  photoUrl: string | null
+}
+
+interface BackendGoal {
+  goalType: string
+  targetAmount: string
+  monthlyContribution: string | null
+  targetDate: string
+  isPaused: boolean
+  createdAt: string | null
+}
+
+interface BackendTransaction {
+  id: string
+  amount: string
+  date: string
+  type: string
+}
+
+interface BackendInvestmentPortfolio {
+  portfolioType: string
+  allocationPercentage: number
+  currentValue: string | number
+}
+
+interface BackendFundDirective {
+  guardianName: string
+  guardianContact: string
+  instructions: string
+}
+
+interface BackendChildDetail {
+  child: BackendChild
+  goal?: BackendGoal
+  transactions?: BackendTransaction[]
+  savingsBalance?: string | number
+  investment?: BackendInvestmentPortfolio
+  fundDirective?: BackendFundDirective
+}
+
+interface BackendUser {
+  fullName: string | null
+}
+
+// Maps a backend portfolio type string to the display allocation buckets
+// used by the investment UI. Keeps UI consistent with PROFILES in investment/page.tsx.
+const PORTFOLIO_ALLOCATIONS: Record<string, { label: string; percentage: number }[]> = {
+  CONSERVATIVE: [
+    { label: "Bonds", percentage: 50 },
+    { label: "Index Funds", percentage: 30 },
+    { label: "Savings Account", percentage: 20 },
+  ],
+  BALANCED: [
+    { label: "Index Funds", percentage: 50 },
+    { label: "Bonds", percentage: 30 },
+    { label: "Savings Account", percentage: 20 },
+  ],
+  GROWTH: [
+    { label: "Index Funds", percentage: 70 },
+    { label: "Bonds", percentage: 20 },
+    { label: "Savings Account", percentage: 10 },
+  ],
+}
+
+const PORTFOLIO_GROWTH_RATES: Record<string, number> = {
+  CONSERVATIVE: 4,
+  BALANCED: 7,
+  GROWTH: 10,
+}
+
+function mapBackendInvestment(portfolio: BackendInvestmentPortfolio): Investment {
+  const type = portfolio.portfolioType.toUpperCase()
+  return {
+    active: true,
+    portfolioType: portfolio.portfolioType,
+    allocation: PORTFOLIO_ALLOCATIONS[type] ?? [
+      { label: "Savings Account", percentage: portfolio.allocationPercentage },
+    ],
+    currentValue: parseFloat(String(portfolio.currentValue)),
+    growthPercentage: PORTFOLIO_GROWTH_RATES[type] ?? 0,
+  }
+}
+
+// ----- Context types -----
+
 interface ChildUpdates {
   name?: string
   dateOfBirth?: string
@@ -30,113 +121,104 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export function AppProvider({ children: childrenNode }: { children: ReactNode }) {
   const [user, setUser] = useState(mockUser)
-  const [childrenData, setChildrenData] = useState<Child[]>(mockChildren)
+  const [childrenData, setChildrenData] = useState<Child[]>([])
   const { session } = useAuth()
 
   useEffect(() => {
-    if (session) {
-      const fetchData = async () => {
-        try {
-          const token = session.access_token
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-          
-          console.log("[AppContext] Fetching user profile and children...")
-          
-          // Fetch user profile
-          const userResponse = await fetch(`${apiUrl}/api/me`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "X-User-Email": session.user?.email || "",
-            },
-          })
-          
-          if (userResponse.ok) {
-            const userData = await userResponse.json()
-            console.log("[AppContext] User data received:", userData)
-            setUser((prev) => ({
-              ...prev,
-              name: userData.fullName || prev.name,
-            }))
-          } else {
-            console.error("[AppContext] Failed to fetch user:", userResponse.status)
-          }
-          
-          // Fetch children list
-          const childrenResponse = await fetch(`${apiUrl}/api/children`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "X-User-Email": session.user?.email || "",
-            },
-          })
-          
-          if (childrenResponse.ok) {
-            const childrenList = await childrenResponse.json()
-            console.log("[AppContext] Children list received:", childrenList)
-            
-            // Fetch full details for each child (includes goals, transactions, savings)
-            const childrenWithDetails = await Promise.all(
-              childrenList.map(async (backendChild: any) => {
-                try {
-                  const detailResponse = await fetch(`${apiUrl}/api/children/${backendChild.id}`, {
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                      "X-User-Email": session.user?.email || "",
-                    },
-                  })
-                  if (detailResponse.ok) {
-                    return await detailResponse.json()
-                  }
-                  return { child: backendChild }
-                } catch (e) {
-                  console.error("[AppContext] Failed to fetch child details:", e)
-                  return { child: backendChild }
-                }
+    if (!session) {
+      setChildrenData(mockChildren)
+      return
+    }
+
+    const controller = new AbortController()
+
+    const fetchData = async () => {
+      try {
+        const token = session.access_token
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+        const headers = {
+          Authorization: `Bearer ${token}`,
+          "X-User-Email": session.user?.email ?? "",
+        }
+
+        // Fetch user profile
+        const userResponse = await fetch(`${apiUrl}/api/me`, { headers, signal: controller.signal })
+        if (userResponse.ok) {
+          const userData: BackendUser = await userResponse.json()
+          setUser((prev) => ({ ...prev, name: userData.fullName ?? prev.name }))
+        }
+
+        // Fetch children list
+        const childrenResponse = await fetch(`${apiUrl}/api/children`, { headers, signal: controller.signal })
+        if (!childrenResponse.ok) return
+
+        const childrenList: BackendChild[] = await childrenResponse.json()
+
+        // Fetch full details for each child
+        const childrenWithDetails = await Promise.all(
+          childrenList.map(async (backendChild) => {
+            try {
+              const detailResponse = await fetch(`${apiUrl}/api/children/${backendChild.id}`, {
+                headers,
+                signal: controller.signal,
               })
-            )
-            
-            console.log("[AppContext] Children details received:", childrenWithDetails)
-            
-            // Transform backend data to frontend format
-            const transformedChildren: Child[] = childrenWithDetails.map((details: any) => {
-              const backendChild = details.child
-              const goal = details.goal
-              const transactions = details.transactions || []
-              const savingsBalance = details.savingsBalance || 0
-              
-              return {
-                id: backendChild.id,
-                name: backendChild.name,
-                dateOfBirth: backendChild.dateOfBirth,
-                photoUrl: backendChild.photoUrl,
-                goal: {
-                  name: goal?.goalType || "Savings Goal",
-                  targetAmount: goal?.targetAmount ? parseFloat(goal.targetAmount) : 0,
-                  currentAmount: savingsBalance ? parseFloat(savingsBalance) : 0,
-                  startDate: goal?.createdAt ? goal.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
-                  targetDate: goal?.targetDate || new Date().toISOString().split("T")[0],
-                  paused: goal?.isPaused || false,
-                },
-                contributions: transactions.map((tx: any) => ({
-                  id: tx.id,
-                  date: new Date(tx.date).toISOString().split("T")[0],
-                  amount: parseFloat(tx.amount),
-                  note: tx.type,
-                })),
-                investment: details.investment || undefined,
-                futureInstructions: details.fundDirective || undefined,
+              if (detailResponse.ok) {
+                return (await detailResponse.json()) as BackendChildDetail
               }
-            })
-            
-            setChildrenData(transformedChildren)
-          } else {
-            console.error("[AppContext] Failed to fetch children:", childrenResponse.status)
+            } catch {
+              // detail fetch failed, fall back to minimal shape
+            }
+            return { child: backendChild } as BackendChildDetail
+          })
+        )
+
+        const transformedChildren: Child[] = childrenWithDetails.map((details) => {
+          const backendChild = details.child
+          const goal = details.goal
+          const transactions = details.transactions ?? []
+          const savingsBalance = details.savingsBalance ?? 0
+
+          return {
+            id: backendChild.id,
+            name: backendChild.name,
+            dateOfBirth: backendChild.dateOfBirth ?? undefined,
+            photoUrl: backendChild.photoUrl ?? undefined,
+            goal: {
+              name: goal?.goalType ?? "Savings Goal",
+              targetAmount: goal?.targetAmount ? parseFloat(goal.targetAmount) : 0,
+              currentAmount: savingsBalance ? parseFloat(String(savingsBalance)) : 0,
+              monthlyContribution: goal?.monthlyContribution ? parseFloat(goal.monthlyContribution) : 0,
+              startDate: goal?.createdAt ? goal.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+              targetDate: goal?.targetDate ?? new Date().toISOString().split("T")[0],
+              paused: goal?.isPaused ?? false,
+            },
+            contributions: transactions.map((tx) => ({
+              id: tx.id,
+              date: new Date(tx.date).toISOString().split("T")[0],
+              amount: parseFloat(tx.amount),
+              note: tx.type,
+            })),
+            investment: details.investment ? mapBackendInvestment(details.investment) : undefined,
+            futureInstructions: details.fundDirective
+              ? {
+                  guardianName: details.fundDirective.guardianName,
+                  guardianContact: details.fundDirective.guardianContact,
+                  instructions: details.fundDirective.instructions,
+                }
+              : undefined,
           }
-        } catch (error) {
+        })
+
+        setChildrenData(transformedChildren)
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
           console.error("[AppContext] Failed to fetch data:", error)
         }
       }
-      fetchData()
     }
+
+    fetchData()
+    return () => controller.abort()
   }, [session])
 
   const addChild = useCallback(

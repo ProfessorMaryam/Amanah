@@ -3,6 +3,7 @@ package com.amanah.controller;
 import com.amanah.dto.UserProfileRequest;
 import com.amanah.entity.User;
 import com.amanah.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,7 +26,7 @@ public class UserController {
 
     @PutMapping
     public ResponseEntity<User> updateProfile(@AuthenticationPrincipal UUID userId,
-                                              @RequestBody UserProfileRequest req) {
+                                              @Valid @RequestBody UserProfileRequest req) {
         return ResponseEntity.ok(userService.updateProfile(userId, req.fullName(), req.phone()));
     }
 }

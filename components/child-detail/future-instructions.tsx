@@ -57,7 +57,7 @@ export function FutureInstructions({ instructions }: { instructions?: FutureInst
             <p className="text-sm font-medium text-amanah-sage">Written Notes</p>
           </div>
           <p className="text-base leading-relaxed text-amanah-plum">
-            {instructions.notes}
+            {instructions.instructions}
           </p>
         </div>
 

@@ -88,9 +88,7 @@ export default function InvestmentPage({
   }
 
   const currentProfile = child.investment?.active
-    ? PROFILES.find((p) =>
-        p.allocation[0].label === child.investment!.allocation[0].label
-      ) ?? null
+    ? PROFILES.find((p) => p.key === child.investment!.portfolioType.toLowerCase()) ?? null
     : null
 
   function handleSave() {
@@ -98,9 +96,10 @@ export default function InvestmentPage({
     if (!profile) return
     const investment: Investment = {
       active: true,
+      portfolioType: profile.key.toUpperCase(),
       allocation: profile.allocation,
       currentValue: child!.investment?.currentValue ?? 0,
-      growthPercentage: child!.investment?.growthPercentage ?? 0,
+      growthPercentage: profile.rate,
     }
     setInvestment(child!.id, investment)
     setSelecting(false)

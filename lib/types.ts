@@ -13,6 +13,7 @@ export interface SavingsGoal {
   name: string
   targetAmount: number
   currentAmount: number
+  monthlyContribution: number
   startDate: string
   targetDate: string
   paused?: boolean
@@ -27,6 +28,7 @@ export interface Contribution {
 
 export interface Investment {
   active: boolean
+  portfolioType: string
   allocation: {
     label: string
     percentage: number
@@ -38,7 +40,7 @@ export interface Investment {
 export interface FutureInstructions {
   guardianName: string
   guardianContact: string
-  notes: string
+  instructions: string
 }
 
 export interface User {

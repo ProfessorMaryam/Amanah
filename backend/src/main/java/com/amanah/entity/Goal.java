@@ -33,8 +33,12 @@ public class Goal {
     @Column(name = "monthly_contribution", nullable = false, precision = 12, scale = 2)
     private BigDecimal monthlyContribution;
 
+    @Builder.Default
     @Column(name = "is_paused", nullable = false)
     private boolean paused = false;
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private java.time.OffsetDateTime createdAt;
 
     public enum GoalType {
         UNIVERSITY, CAR, WEDDING, BUSINESS, GENERAL

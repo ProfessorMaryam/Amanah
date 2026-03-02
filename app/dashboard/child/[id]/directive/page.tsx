@@ -23,7 +23,7 @@ export default function DirectivePage({
   const [editing, setEditing] = useState(!existing)
   const [guardianName, setGuardianName] = useState(existing?.guardianName ?? "")
   const [guardianContact, setGuardianContact] = useState(existing?.guardianContact ?? "")
-  const [notes, setNotes] = useState(existing?.notes ?? "")
+  const [notes, setNotes] = useState(existing?.instructions ?? "")
 
   if (!child) {
     return (
@@ -38,7 +38,7 @@ export default function DirectivePage({
   function openEdit() {
     setGuardianName(child!.futureInstructions?.guardianName ?? "")
     setGuardianContact(child!.futureInstructions?.guardianContact ?? "")
-    setNotes(child!.futureInstructions?.notes ?? "")
+    setNotes(child!.futureInstructions?.instructions ?? "")
     setEditing(true)
   }
 
@@ -47,7 +47,7 @@ export default function DirectivePage({
     setFutureInstructions(child!.id, {
       guardianName,
       guardianContact,
-      notes,
+      instructions: notes,
     })
     setEditing(false)
   }
@@ -116,7 +116,7 @@ export default function DirectivePage({
                   <FileText className="h-4 w-4 text-amanah-sage" />
                   <p className="text-xs font-medium text-amanah-sage">Written Instructions</p>
                 </div>
-                <p className="text-sm leading-relaxed text-amanah-plum">{existing.notes}</p>
+                <p className="text-sm leading-relaxed text-amanah-plum">{existing.instructions}</p>
               </div>
             </CardContent>
           </Card>
