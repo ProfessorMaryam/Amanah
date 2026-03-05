@@ -106,13 +106,13 @@ interface ChildUpdates {
 interface AppContextType {
   user: typeof mockUser
   children: Child[]
-  addChild: (child: Omit<Child, "id" | "contributions" | "investment" | "futureInstructions">) => void
-  updateChild: (id: string, updates: ChildUpdates) => void
-  deleteChild: (id: string) => void
-  addContribution: (childId: string, amount: number, note?: string) => void
-  togglePausedGoal: (childId: string) => void
-  setInvestment: (childId: string, investment: Investment) => void
-  setFutureInstructions: (childId: string, instructions: FutureInstructions) => void
+  addChild: (child: Omit<Child, "id" | "contributions" | "investment" | "futureInstructions">) => Promise<void>
+  updateChild: (id: string, updates: ChildUpdates) => Promise<void>
+  deleteChild: (id: string) => Promise<void>
+  addContribution: (childId: string, amount: number, note?: string) => Promise<void>
+  togglePausedGoal: (childId: string) => Promise<void>
+  setInvestment: (childId: string, investment: Investment) => Promise<void>
+  setFutureInstructions: (childId: string, instructions: FutureInstructions) => Promise<void>
   getChild: (id: string) => Child | undefined
   totalSavings: number
 }
@@ -123,6 +123,23 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
   const [user, setUser] = useState(mockUser)
   const [childrenData, setChildrenData] = useState<Child[]>([])
   const { session } = useAuth()
+
+  // ----- Helpers -----
+
+  function apiHeaders() {
+    return {
+      Authorization: `Bearer ${session!.access_token}`,
+      "Content-Type": "application/json",
+      "X-User-Email": session!.user?.email ?? "",
+    }
+  }
+
+  function apiUrl(path: string) {
+    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+    return `${base}${path}`
+  }
+
+  // ----- Fetch all data from backend -----
 
   useEffect(() => {
     if (!session) {
@@ -138,8 +155,8 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
     const fetchData = async () => {
       try {
         const token = session.access_token
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-        console.log("[AppContext] API URL:", apiUrl)
+        const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+        console.log("[AppContext] API URL:", base)
         console.log("[AppContext] Token (first 20 chars):", token?.slice(0, 20))
 
         const headers = {
@@ -149,7 +166,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
 
         // Fetch user profile
         console.log("[AppContext] Fetching /api/me ...")
-        const userResponse = await fetch(`${apiUrl}/api/me`, { headers, signal: controller.signal })
+        const userResponse = await fetch(`${base}/api/me`, { headers, signal: controller.signal })
         console.log("[AppContext] /api/me status:", userResponse.status)
         if (userResponse.ok) {
           const userData: BackendUser = await userResponse.json()
@@ -162,7 +179,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
 
         // Fetch children list
         console.log("[AppContext] Fetching /api/children ...")
-        const childrenResponse = await fetch(`${apiUrl}/api/children`, { headers, signal: controller.signal })
+        const childrenResponse = await fetch(`${base}/api/children`, { headers, signal: controller.signal })
         console.log("[AppContext] /api/children status:", childrenResponse.status)
         if (!childrenResponse.ok) {
           const errText = await childrenResponse.text()
@@ -184,7 +201,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
           childrenList.map(async (backendChild) => {
             try {
               console.log(`[AppContext] Fetching details for child ${backendChild.id} (${backendChild.name}) ...`)
-              const detailResponse = await fetch(`${apiUrl}/api/children/${backendChild.id}`, {
+              const detailResponse = await fetch(`${base}/api/children/${backendChild.id}`, {
                 headers,
                 signal: controller.signal,
               })
@@ -257,51 +274,201 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
     return () => controller.abort()
   }, [session])
 
+  // ----- Write operations wired to backend -----
+
   const addChild = useCallback(
-    (child: Omit<Child, "id" | "contributions" | "investment" | "futureInstructions">) => {
-      const newChild: Child = {
-        ...child,
-        id: String(Date.now()),
-        contributions: [],
-        investment: undefined,
-        futureInstructions: undefined,
+    async (child: Omit<Child, "id" | "contributions" | "investment" | "futureInstructions">) => {
+      if (!session) return
+
+      // 1. Create the child
+      const childRes = await fetch(apiUrl("/api/children"), {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify({
+          name: child.name,
+          dateOfBirth: child.dateOfBirth || null,
+          photoUrl: child.photoUrl || null,
+        }),
+      })
+      if (!childRes.ok) {
+        console.error("[AppContext] addChild failed:", await childRes.text())
+        return
       }
-      setChildrenData((prev) => [...prev, newChild])
+      const newBackendChild: BackendChild = await childRes.json()
+
+      // 2. Create the goal if provided
+      if (child.goal?.targetAmount && child.goal?.targetDate) {
+        const goalRes = await fetch(apiUrl(`/api/children/${newBackendChild.id}/goal`), {
+          method: "POST",
+          headers: apiHeaders(),
+          body: JSON.stringify({
+            goalType: child.goal.name || "EDUCATION",
+            targetAmount: child.goal.targetAmount,
+            targetDate: child.goal.targetDate,
+            monthlyContribution: child.goal.monthlyContribution ?? 0,
+            paused: false,
+          }),
+        })
+        if (!goalRes.ok) {
+          console.error("[AppContext] addChild goal failed:", await goalRes.text())
+        }
+      }
+
+      // 3. Add to local state
+      setChildrenData((prev) => [
+        ...prev,
+        {
+          id: newBackendChild.id,
+          name: newBackendChild.name,
+          dateOfBirth: newBackendChild.dateOfBirth ?? "",
+          photoUrl: newBackendChild.photoUrl ?? undefined,
+          goal: {
+            name: child.goal?.name ?? "Savings Goal",
+            targetAmount: child.goal?.targetAmount ?? 0,
+            currentAmount: 0,
+            monthlyContribution: child.goal?.monthlyContribution ?? 0,
+            startDate: new Date().toISOString().split("T")[0],
+            targetDate: child.goal?.targetDate ?? new Date().toISOString().split("T")[0],
+            paused: false,
+          },
+          contributions: [],
+          investment: undefined,
+          futureInstructions: undefined,
+        },
+      ])
     },
-    []
+    [session]
   )
 
-  const updateChild = useCallback((id: string, updates: ChildUpdates) => {
-    setChildrenData((prev) =>
-      prev.map((c) => {
-        if (c.id !== id) return c
-        return {
-          ...c,
-          ...(updates.name !== undefined && { name: updates.name }),
-          ...(updates.dateOfBirth !== undefined && { dateOfBirth: updates.dateOfBirth }),
-          ...(updates.photoUrl !== undefined && { photoUrl: updates.photoUrl }),
-          ...(updates.goal !== undefined && { goal: { ...c.goal, ...updates.goal } }),
+  const updateChild = useCallback(
+    async (id: string, updates: ChildUpdates) => {
+      if (!session) return
+
+      const existing = childrenData.find((c) => c.id === id)
+      if (!existing) return
+
+      // 1. Update child profile if name/dob/photo changed
+      if (updates.name !== undefined || updates.dateOfBirth !== undefined || updates.photoUrl !== undefined) {
+        const childRes = await fetch(apiUrl(`/api/children/${id}`), {
+          method: "PUT",
+          headers: apiHeaders(),
+          body: JSON.stringify({
+            name: updates.name ?? existing.name,
+            dateOfBirth: updates.dateOfBirth ?? (existing.dateOfBirth || null),
+            photoUrl: updates.photoUrl ?? existing.photoUrl ?? null,
+          }),
+        })
+        if (!childRes.ok) {
+          console.error("[AppContext] updateChild failed:", await childRes.text())
+          return
         }
-      })
-    )
-  }, [])
+      }
 
-  const deleteChild = useCallback((id: string) => {
-    setChildrenData((prev) => prev.filter((c) => c.id !== id))
-  }, [])
+      // 2. Update goal if goal fields changed
+      if (updates.goal !== undefined) {
+        const mergedGoal = { ...existing.goal, ...updates.goal }
+        const goalRes = await fetch(apiUrl(`/api/children/${id}/goal`), {
+          method: "POST",
+          headers: apiHeaders(),
+          body: JSON.stringify({
+            goalType: mergedGoal.name || "EDUCATION",
+            targetAmount: mergedGoal.targetAmount,
+            targetDate: mergedGoal.targetDate,
+            monthlyContribution: mergedGoal.monthlyContribution ?? 0,
+            paused: mergedGoal.paused ?? false,
+          }),
+        })
+        if (!goalRes.ok) {
+          console.error("[AppContext] updateChild goal failed:", await goalRes.text())
+          return
+        }
+      }
 
-  const togglePausedGoal = useCallback((childId: string) => {
-    setChildrenData((prev) =>
-      prev.map((c) =>
-        c.id === childId
-          ? { ...c, goal: { ...c.goal, paused: !c.goal.paused } }
-          : c
+      // 3. Update local state
+      setChildrenData((prev) =>
+        prev.map((c) => {
+          if (c.id !== id) return c
+          return {
+            ...c,
+            ...(updates.name !== undefined && { name: updates.name }),
+            ...(updates.dateOfBirth !== undefined && { dateOfBirth: updates.dateOfBirth }),
+            ...(updates.photoUrl !== undefined && { photoUrl: updates.photoUrl }),
+            ...(updates.goal !== undefined && { goal: { ...c.goal, ...updates.goal } }),
+          }
+        })
       )
-    )
-  }, [])
+    },
+    [session, childrenData]
+  )
+
+  const deleteChild = useCallback(
+    async (id: string) => {
+      if (!session) return
+
+      const res = await fetch(apiUrl(`/api/children/${id}`), {
+        method: "DELETE",
+        headers: apiHeaders(),
+      })
+      if (!res.ok) {
+        console.error("[AppContext] deleteChild failed:", await res.text())
+        return
+      }
+
+      setChildrenData((prev) => prev.filter((c) => c.id !== id))
+    },
+    [session]
+  )
+
+  const togglePausedGoal = useCallback(
+    async (childId: string) => {
+      if (!session) return
+
+      const child = childrenData.find((c) => c.id === childId)
+      if (!child) return
+
+      const newPaused = !child.goal.paused
+      const res = await fetch(apiUrl(`/api/children/${childId}/goal`), {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify({
+          goalType: child.goal.name || "EDUCATION",
+          targetAmount: child.goal.targetAmount,
+          targetDate: child.goal.targetDate,
+          monthlyContribution: child.goal.monthlyContribution ?? 0,
+          paused: newPaused,
+        }),
+      })
+      if (!res.ok) {
+        console.error("[AppContext] togglePausedGoal failed:", await res.text())
+        return
+      }
+
+      setChildrenData((prev) =>
+        prev.map((c) =>
+          c.id === childId
+            ? { ...c, goal: { ...c.goal, paused: newPaused } }
+            : c
+        )
+      )
+    },
+    [session, childrenData]
+  )
 
   const addContribution = useCallback(
-    (childId: string, amount: number, note?: string) => {
+    async (childId: string, amount: number, note?: string) => {
+      if (!session) return
+
+      const res = await fetch(apiUrl(`/api/children/${childId}/contribute`), {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify({ amount }),
+      })
+      if (!res.ok) {
+        console.error("[AppContext] addContribution failed:", await res.text())
+        return
+      }
+      const tx = await res.json()
+
       setChildrenData((prev) =>
         prev.map((c) =>
           c.id === childId
@@ -310,8 +477,8 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
                 goal: { ...c.goal, currentAmount: c.goal.currentAmount + amount },
                 contributions: [
                   {
-                    id: String(Date.now()),
-                    date: new Date().toISOString().split("T")[0],
+                    id: tx.id ?? String(Date.now()),
+                    date: new Date(tx.date ?? Date.now()).toISOString().split("T")[0],
                     amount,
                     note,
                   },
@@ -322,20 +489,57 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         )
       )
     },
-    []
+    [session]
   )
 
-  const setInvestment = useCallback((childId: string, investment: Investment) => {
-    setChildrenData((prev) =>
-      prev.map((c) => c.id === childId ? { ...c, investment } : c)
-    )
-  }, [])
+  const setInvestment = useCallback(
+    async (childId: string, investment: Investment) => {
+      if (!session) return
 
-  const setFutureInstructions = useCallback((childId: string, instructions: FutureInstructions) => {
-    setChildrenData((prev) =>
-      prev.map((c) => c.id === childId ? { ...c, futureInstructions: instructions } : c)
-    )
-  }, [])
+      const res = await fetch(apiUrl(`/api/children/${childId}/investment`), {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify({
+          portfolioType: investment.portfolioType.toUpperCase(),
+          allocationPercent: investment.allocation.reduce((sum, a) => sum + a.percentage, 0),
+        }),
+      })
+      if (!res.ok) {
+        console.error("[AppContext] setInvestment failed:", await res.text())
+        return
+      }
+
+      setChildrenData((prev) =>
+        prev.map((c) => c.id === childId ? { ...c, investment } : c)
+      )
+    },
+    [session]
+  )
+
+  const setFutureInstructions = useCallback(
+    async (childId: string, instructions: FutureInstructions) => {
+      if (!session) return
+
+      const res = await fetch(apiUrl(`/api/children/${childId}/directive`), {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify({
+          guardianName: instructions.guardianName,
+          guardianContact: instructions.guardianContact,
+          instructions: instructions.instructions,
+        }),
+      })
+      if (!res.ok) {
+        console.error("[AppContext] setFutureInstructions failed:", await res.text())
+        return
+      }
+
+      setChildrenData((prev) =>
+        prev.map((c) => c.id === childId ? { ...c, futureInstructions: instructions } : c)
+      )
+    },
+    [session]
+  )
 
   const getChild = useCallback(
     (id: string) => childrenData.find((c) => c.id === id),
