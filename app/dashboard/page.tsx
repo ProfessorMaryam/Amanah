@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useApp } from "@/lib/app-context"
 import { ChildCard } from "@/components/child-card"
@@ -18,6 +20,15 @@ function formatCurrency(amount: number) {
 
 export default function DashboardPage() {
   const { user, children, totalSavings } = useApp()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (user.role === "child") {
+      router.replace("/dashboard/child-view")
+    }
+  }, [user.role, router])
+
+  if (user.role === "child") return null
 
   const totalTarget = children.reduce(
     (sum, c) => sum + c.goal.targetAmount,

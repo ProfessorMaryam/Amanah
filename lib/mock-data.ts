@@ -4,6 +4,7 @@ export const mockUser: User = {
   id: "1",
   name: "Sarah",
   email: "sarah@example.com",
+  role: "parent",
 }
 
 export const mockChildren: Child[] = [

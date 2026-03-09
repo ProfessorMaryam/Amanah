@@ -52,6 +52,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { user, children } = useApp()
   const { signOut } = useAuth()
 
+  const isChild = user.role === "child"
+
   // Detect if we're on a child route and extract the child id
   const childRouteMatch = pathname.match(/^\/dashboard\/child\/([^/]+)/)
   const activeChildId = childRouteMatch ? childRouteMatch[1] : null
@@ -77,19 +79,21 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <NavLink
           href="/dashboard"
           icon={LayoutDashboard}
-          label="Dashboard"
+          label={isChild ? "My Savings" : "Dashboard"}
           active={pathname === "/dashboard"}
         />
-        <NavLink
-          href="/dashboard/add-child"
-          icon={UserPlus}
-          label="Add Child"
-          active={pathname === "/dashboard/add-child"}
-        />
+        {!isChild && (
+          <NavLink
+            href="/dashboard/add-child"
+            icon={UserPlus}
+            label="Add Child"
+            active={pathname === "/dashboard/add-child"}
+          />
+        )}
       </nav>
 
-      {/* Child sub-navigation (shown when viewing a child) */}
-      {activeChild && (
+      {/* Child sub-navigation (shown when viewing a child — parent only) */}
+      {!isChild && activeChild && (
         <div className="flex flex-col gap-1 border-t border-border px-3 py-4">
           <p className="mb-1 px-4 text-xs font-semibold uppercase tracking-widest text-amanah-sage">
             {activeChild.name}
@@ -115,8 +119,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       )}
 
-      {/* Children list */}
-      {children.length > 0 && (
+      {/* Children list — parent only */}
+      {!isChild && children.length > 0 && (
         <div className="flex flex-col gap-1 border-t border-border px-3 py-4">
           <p className="mb-1 px-4 text-xs font-semibold uppercase tracking-widest text-amanah-sage">
             Children

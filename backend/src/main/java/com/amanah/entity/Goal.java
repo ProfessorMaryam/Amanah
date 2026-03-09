@@ -38,6 +38,8 @@ public class Goal {
     private java.time.OffsetDateTime createdAt;
 
     public enum GoalType {
-        UNIVERSITY, CAR, WEDDING, BUSINESS, GENERAL
+        UNIVERSITY, CAR, WEDDING, BUSINESS, GENERAL,
+        // Child-user personal goal presets
+        BICYCLE, GAME, TRIP, GADGET, SPORTS, BOOK, PET, CLOTHES, CAMP, OTHER
     }
 }

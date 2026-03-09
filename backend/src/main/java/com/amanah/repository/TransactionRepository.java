@@ -13,4 +13,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
 
     @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.childId = :childId")
     BigDecimal sumByChildId(UUID childId);
+
+    void deleteAllByChildId(UUID childId);
 }

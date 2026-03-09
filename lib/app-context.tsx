@@ -53,6 +53,7 @@ interface BackendChildDetail {
 
 interface BackendUser {
   fullName: string | null
+  role: "parent" | "child" | null
 }
 
 // Maps a backend portfolio type string to the display allocation buckets
@@ -94,6 +95,19 @@ function mapBackendInvestment(portfolio: BackendInvestmentPortfolio): Investment
   }
 }
 
+// ----- Child user personal goal types -----
+
+export interface PersonalGoal {
+  id: string
+  name: string
+  targetAmount: number
+  targetDate: string
+  currentAmount: number
+  monthsRemaining: number
+  isPaused: boolean
+  transactions: { id: string; amount: number; date: string }[]
+}
+
 // ----- Context types -----
 
 interface ChildUpdates {
@@ -115,6 +129,11 @@ interface AppContextType {
   setFutureInstructions: (childId: string, instructions: FutureInstructions) => Promise<void>
   getChild: (id: string) => Child | undefined
   totalSavings: number
+  // Child user personal goals
+  personalGoals: PersonalGoal[]
+  createPersonalGoal: (goalType: string, targetAmount: number, targetDate: string) => Promise<void>
+  contributeToPersonalGoal: (goalId: string, amount: number) => Promise<void>
+  deletePersonalGoal: (goalId: string) => Promise<void>
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -122,6 +141,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 export function AppProvider({ children: childrenNode }: { children: ReactNode }) {
   const [user, setUser] = useState(mockUser)
   const [childrenData, setChildrenData] = useState<Child[]>([])
+  const [personalGoals, setPersonalGoals] = useState<PersonalGoal[]>([])
   const { session } = useAuth()
 
   // ----- Helpers -----
@@ -171,7 +191,11 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         if (userResponse.ok) {
           const userData: BackendUser = await userResponse.json()
           console.log("[AppContext] /api/me response:", userData)
-          setUser((prev) => ({ ...prev, name: userData.fullName ?? prev.name }))
+          setUser((prev) => ({
+            ...prev,
+            name: userData.fullName ?? prev.name,
+            role: userData.role ?? prev.role,
+          }))
         } else {
           const errText = await userResponse.text()
           console.error("[AppContext] /api/me error body:", errText)
@@ -263,6 +287,28 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
 
         console.log("[AppContext] Setting children data:", transformedChildren.length, "children")
         setChildrenData(transformedChildren)
+
+        // Fetch personal goals for child-role users
+        const goalsRes = await fetch(`${base}/api/my-goals`, { headers, signal: controller.signal })
+        if (goalsRes.ok) {
+          const raw = await goalsRes.json()
+          setPersonalGoals(
+            raw.map((g: any) => ({
+              id: String(g.id),
+              name: String(g.name),
+              targetAmount: parseFloat(String(g.targetAmount)),
+              targetDate: String(g.targetDate),
+              currentAmount: parseFloat(String(g.currentAmount ?? 0)),
+              monthsRemaining: Number(g.monthsRemaining ?? 0),
+              isPaused: Boolean(g.isPaused),
+              transactions: (g.transactions ?? []).map((t: any) => ({
+                id: String(t.id),
+                amount: parseFloat(String(t.amount)),
+                date: new Date(t.date).toISOString().split("T")[0],
+              })),
+            }))
+          )
+        }
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
           console.error("[AppContext] Failed to fetch data:", error)
@@ -551,6 +597,83 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
     0
   )
 
+  const createPersonalGoal = useCallback(
+    async (goalType: string, targetAmount: number, targetDate: string) => {
+      if (!session) return
+      const res = await fetch(apiUrl("/api/my-goals"), {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify({ goalType, targetAmount, targetDate }),
+      })
+      if (!res.ok) {
+        console.error("[AppContext] createPersonalGoal failed:", await res.text())
+        return
+      }
+      const g = await res.json()
+      setPersonalGoals((prev) => [
+        ...prev,
+        {
+          id: String(g.id),
+          name: String(g.name),
+          targetAmount: parseFloat(String(g.targetAmount)),
+          targetDate: String(g.targetDate),
+          currentAmount: 0,
+          monthsRemaining: Number(g.monthsRemaining ?? 0),
+          isPaused: false,
+          transactions: [],
+        },
+      ])
+    },
+    [session]
+  )
+
+  const contributeToPersonalGoal = useCallback(
+    async (goalId: string, amount: number) => {
+      if (!session) return
+      const res = await fetch(apiUrl(`/api/my-goals/${goalId}/contribute`), {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify({ amount }),
+      })
+      if (!res.ok) {
+        console.error("[AppContext] contributeToPersonalGoal failed:", await res.text())
+        return
+      }
+      const tx = await res.json()
+      setPersonalGoals((prev) =>
+        prev.map((g) =>
+          g.id === goalId
+            ? {
+                ...g,
+                currentAmount: g.currentAmount + amount,
+                transactions: [
+                  { id: String(tx.id), amount, date: new Date(tx.date ?? Date.now()).toISOString().split("T")[0] },
+                  ...g.transactions,
+                ],
+              }
+            : g
+        )
+      )
+    },
+    [session]
+  )
+
+  const deletePersonalGoal = useCallback(
+    async (goalId: string) => {
+      if (!session) return
+      const res = await fetch(apiUrl(`/api/my-goals/${goalId}`), {
+        method: "DELETE",
+        headers: apiHeaders(),
+      })
+      if (!res.ok) {
+        console.error("[AppContext] deletePersonalGoal failed:", await res.text())
+        return
+      }
+      setPersonalGoals((prev) => prev.filter((g) => g.id !== goalId))
+    },
+    [session]
+  )
+
   return (
     <AppContext.Provider
       value={{
@@ -565,6 +688,10 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         setFutureInstructions,
         getChild,
         totalSavings,
+        personalGoals,
+        createPersonalGoal,
+        contributeToPersonalGoal,
+        deletePersonalGoal,
       }}
     >
       {childrenNode}
