@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { useApp } from "@/lib/app-context"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import {
   Heart,
   LayoutDashboard,
@@ -204,6 +204,7 @@ export function AppSidebar() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-64 bg-gradient-to-b from-amanah-cream to-white p-0">
+            <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
             <SidebarContent />
           </SheetContent>
         </Sheet>

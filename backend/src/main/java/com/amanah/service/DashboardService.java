@@ -4,7 +4,6 @@ import com.amanah.entity.Child;
 import com.amanah.entity.Goal;
 import com.amanah.entity.InvestmentPortfolio;
 import com.amanah.repository.ChildRepository;
-import com.amanah.repository.GoalRepository;
 import com.amanah.repository.InvestmentPortfolioRepository;
 import com.amanah.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +20,7 @@ import java.util.*;
 public class DashboardService {
 
     private final ChildRepository childRepository;
-    private final GoalRepository goalRepository;
+    private final GoalService goalService;
     private final TransactionRepository transactionRepository;
     private final InvestmentPortfolioRepository portfolioRepository;
 
@@ -40,7 +39,7 @@ public class DashboardService {
             BigDecimal total = savings.add(investment);
             totalFamilySavings = totalFamilySavings.add(total);
 
-            Optional<Goal> goalOpt = goalRepository.findByChildId(child.getId());
+            Optional<Goal> goalOpt = goalService.findByChild(child.getId());
             Map<String, Object> summary = new LinkedHashMap<>();
             summary.put("childId", child.getId());
             summary.put("name", child.getName());

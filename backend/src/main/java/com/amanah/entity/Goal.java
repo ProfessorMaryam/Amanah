@@ -17,9 +17,6 @@ public class Goal {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    @Column(name = "child_id", nullable = false, columnDefinition = "uuid", unique = true)
-    private UUID childId;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "goal_type", nullable = false)
     private GoalType goalType;
