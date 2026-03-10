@@ -2,10 +2,8 @@ package com.amanah.service;
 
 import com.amanah.entity.Child;
 import com.amanah.entity.Goal;
-import com.amanah.entity.GoalOwner;
 import com.amanah.entity.Transaction;
 import com.amanah.repository.ChildRepository;
-import com.amanah.repository.GoalOwnerRepository;
 import com.amanah.repository.GoalRepository;
 import com.amanah.repository.InvestmentPortfolioRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +22,6 @@ public class SimulationService {
 
     private final ChildRepository childRepository;
     private final GoalRepository goalRepository;
-    private final GoalOwnerRepository goalOwnerRepository;
     private final InvestmentPortfolioRepository portfolioRepository;
     private final ContributionService contributionService;
 
@@ -33,21 +30,16 @@ public class SimulationService {
         List<Child> children = childRepository.findAllByParentId(parentId);
         List<UUID> childIds = children.stream().map(Child::getId).toList();
 
-        List<GoalOwner> owners = goalOwnerRepository.findAllByChildIdIn(childIds);
-        List<Goal> activeGoals = owners.stream()
-                .flatMap(o -> goalRepository.findById(o.getGoalId()).stream())
+        List<Goal> activeGoals = childIds.stream()
+                .flatMap(childId -> goalRepository.findByChildId(childId).stream())
                 .filter(g -> !g.isPaused())
                 .toList();
-
-        // Map goalId -> childId for contribution lookup
-        java.util.Map<UUID, UUID> goalToChild = owners.stream()
-                .collect(java.util.stream.Collectors.toMap(GoalOwner::getGoalId, GoalOwner::getChildId));
 
         for (Goal goal : activeGoals) {
             BigDecimal monthly = goal.getMonthlyContribution();
             if (monthly == null || monthly.compareTo(BigDecimal.ZERO) <= 0) continue;
 
-            UUID childId = goalToChild.get(goal.getId());
+            UUID childId = goal.getChildId();
             if (childId == null) continue;
 
             contributionService.contribute(childId, monthly, Transaction.TransactionType.AUTO);

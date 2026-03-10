@@ -8,14 +8,17 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
-@Table(name = "goals")
+@Table(name = "personal_goals")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Goal {
+public class PersonalGoal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "uuid")
     private UUID id;
+
+    @Column(name = "user_id", nullable = false, columnDefinition = "uuid")
+    private UUID userId;
 
     @Column(name = "goal_type", nullable = false)
     private String goalType;
@@ -31,13 +34,7 @@ public class Goal {
 
     @Builder.Default
     @Column(name = "is_paused", nullable = false)
-    private boolean paused = false;
-
-    @Column(name = "child_id", columnDefinition = "uuid")
-    private UUID childId;
-
-    @Column(name = "stripe_subscription_id")
-    private String stripeSubscriptionId;
+    private boolean isPaused = false;
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private java.time.OffsetDateTime createdAt;

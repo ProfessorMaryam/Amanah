@@ -1,7 +1,6 @@
 package com.amanah.service;
 
 import com.amanah.entity.Child;
-import com.amanah.entity.GoalOwner;
 import com.amanah.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,8 +17,8 @@ public class ChildService {
     private final TransactionRepository transactionRepository;
     private final InvestmentPortfolioRepository investmentPortfolioRepository;
     private final FundDirectiveRepository fundDirectiveRepository;
-    private final GoalOwnerRepository goalOwnerRepository;
     private final GoalRepository goalRepository;
+    private final StripeService stripeService;
 
     public List<Child> getChildren(UUID parentId) {
         return childRepository.findAllByParentId(parentId);
@@ -61,13 +60,13 @@ public class ChildService {
         // 3. Delete fund directive
         fundDirectiveRepository.deleteByChildId(id);
 
-        // 4. Collect goal IDs linked to this child, delete goal_owners, then the goals
-        List<GoalOwner> goalOwners = goalOwnerRepository.findAllByChildId(id);
-        List<UUID> goalIds = goalOwners.stream().map(GoalOwner::getGoalId).toList();
-        goalOwnerRepository.deleteAllByChildId(id);
-        if (!goalIds.isEmpty()) {
-            goalRepository.deleteAllById(goalIds);
-        }
+        // 4. Cancel Stripe subscription if present, then delete the goal
+        goalRepository.findByChildId(id).ifPresent(goal -> {
+            if (goal.getStripeSubscriptionId() != null) {
+                stripeService.cancelSubscription(goal.getStripeSubscriptionId());
+            }
+        });
+        goalRepository.deleteByChildId(id);
 
         // 5. Delete the child
         childRepository.delete(child);

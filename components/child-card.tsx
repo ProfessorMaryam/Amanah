@@ -25,10 +25,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Eye, Plus, X, Pencil, Trash2, PauseCircle, PlayCircle } from "lucide-react"
+import { Eye, Plus, X, Pencil, Trash2, PauseCircle, PlayCircle, CreditCard } from "lucide-react"
 import { useApp } from "@/lib/app-context"
 import type { Child } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { PaymentSetupDialog } from "@/components/payment-setup-dialog"
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-BH", {
@@ -52,6 +53,7 @@ export function ChildCard({ child }: { child: Child }) {
   const [amount, setAmount] = useState("")
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false)
 
   // Edit form state
   const [editName, setEditName] = useState(child.name)
@@ -86,12 +88,14 @@ export function ChildCard({ child }: { child: Child }) {
 
   function handleEdit(e: React.FormEvent) {
     e.preventDefault()
+    const parsedAmount = parseFloat(editTargetAmount)
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return
     updateChild(child.id, {
       name: editName,
       dateOfBirth: editDob,
       goal: {
         name: editGoalName,
-        targetAmount: parseFloat(editTargetAmount),
+        targetAmount: parsedAmount,
         targetDate: editTargetDate,
       },
     })
@@ -226,6 +230,17 @@ export function ChildCard({ child }: { child: Child }) {
                 View
               </Button>
             </Link>
+            {!child.goal.stripeSubscriptionId && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 shrink-0 border-border text-amanah-sage hover:text-primary"
+                onClick={() => setShowPaymentDialog(true)}
+                aria-label="Set up payments"
+              >
+                <CreditCard className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -320,6 +335,13 @@ export function ChildCard({ child }: { child: Child }) {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Setup */}
+      <PaymentSetupDialog
+        childId={child.id}
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+      />
 
       {/* Delete Confirmation */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

@@ -17,6 +17,7 @@ export interface SavingsGoal {
   startDate: string
   targetDate: string
   paused?: boolean
+  stripeSubscriptionId?: string
 }
 
 export interface Contribution {

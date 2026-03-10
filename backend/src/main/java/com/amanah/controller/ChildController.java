@@ -26,6 +26,7 @@ public class ChildController {
     private final FundDirectiveService directiveService;
     private final TransactionRepository transactionRepository;
     private final InvestmentPortfolioRepository portfolioRepository;
+    private final StripeService stripeService;
 
     // --- Children CRUD ---
 
@@ -73,7 +74,9 @@ public class ChildController {
             long months = ChronoUnit.MONTHS.between(LocalDate.now(), g.getTargetDate());
             response.put("goal", g);
             response.put("monthsRemaining", Math.max(0, months));
-            LocalDate projected = savings.compareTo(BigDecimal.ZERO) > 0 && g.getMonthlyContribution() != null
+            LocalDate projected = savings.compareTo(BigDecimal.ZERO) > 0
+                    && g.getMonthlyContribution() != null
+                    && g.getMonthlyContribution().compareTo(BigDecimal.ZERO) > 0
                     ? LocalDate.now().plusMonths(
                             g.getTargetAmount().subtract(savings)
                              .divide(g.getMonthlyContribution(), 0, java.math.RoundingMode.CEILING).longValue())
@@ -93,8 +96,19 @@ public class ChildController {
                                         @PathVariable UUID id,
                                         @Valid @RequestBody GoalRequest req) {
         childService.getChild(id, parentId); // ownership check
-        return ResponseEntity.ok(goalService.createOrUpdateGoal(
-                id, req.goalType(), req.targetAmount(), req.targetDate(), req.monthlyContribution(), req.paused()));
+        // Capture previous paused state before saving
+        boolean wasPaused = goalService.findByChild(id).map(Goal::isPaused).orElse(false);
+        Goal saved = goalService.createOrUpdateGoal(
+                id, req.goalType(), req.targetAmount(), req.targetDate(), req.monthlyContribution(), req.paused());
+        // Sync with Stripe if subscription exists and paused state changed
+        if (saved.getStripeSubscriptionId() != null && req.paused() != wasPaused) {
+            if (req.paused()) {
+                stripeService.pauseSubscription(saved.getStripeSubscriptionId());
+            } else {
+                stripeService.resumeSubscription(saved.getStripeSubscriptionId());
+            }
+        }
+        return ResponseEntity.ok(saved);
     }
 
     // --- Contribution ---

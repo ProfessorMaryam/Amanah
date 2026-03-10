@@ -1,18 +1,13 @@
 package com.amanah.service;
 
 import com.amanah.entity.Goal;
-import com.amanah.entity.GoalOwner;
-import com.amanah.repository.GoalOwnerRepository;
 import com.amanah.repository.GoalRepository;
-import com.amanah.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,8 +16,6 @@ import java.util.UUID;
 public class GoalService {
 
     private final GoalRepository goalRepository;
-    private final GoalOwnerRepository goalOwnerRepository;
-    private final TransactionRepository transactionRepository;
 
     public Goal getGoalByChild(UUID childId) {
         return findByChild(childId)
@@ -30,48 +23,22 @@ public class GoalService {
     }
 
     public Optional<Goal> findByChild(UUID childId) {
-        return goalOwnerRepository.findAllByChildId(childId).stream()
-                .findFirst()
-                .flatMap(owner -> goalRepository.findById(owner.getGoalId()));
+        return goalRepository.findByChildId(childId);
     }
 
     @Transactional
     public Goal createOrUpdateGoal(UUID childId, String type,
                                    BigDecimal targetAmount, LocalDate targetDate,
                                    BigDecimal monthlyOverride, boolean paused) {
-        Optional<GoalOwner> existingOwner = goalOwnerRepository.findAllByChildId(childId).stream().findFirst();
-        Goal goal = existingOwner
-                .flatMap(o -> goalRepository.findById(o.getGoalId()))
-                .orElse(new Goal());
+        Goal goal = goalRepository.findByChildId(childId).orElse(new Goal());
 
+        goal.setChildId(childId);
         goal.setGoalType(type);
         goal.setTargetAmount(targetAmount);
         goal.setTargetDate(targetDate);
         goal.setPaused(paused);
-        goal.setMonthlyContribution(
-                monthlyOverride != null ? monthlyOverride : suggestedMonthly(childId, targetAmount, targetDate)
-        );
+        goal.setMonthlyContribution(monthlyOverride != null ? monthlyOverride : BigDecimal.ZERO);
 
-        goal = goalRepository.save(goal);
-
-        if (existingOwner.isEmpty()) {
-            GoalOwner owner = GoalOwner.builder()
-                    .goalId(goal.getId())
-                    .ownerId(childId)
-                    .childId(childId)
-                    .build();
-            goalOwnerRepository.save(owner);
-        }
-
-        return goal;
-    }
-
-    public BigDecimal suggestedMonthly(UUID childId, BigDecimal targetAmount, LocalDate targetDate) {
-        BigDecimal balance = transactionRepository.sumByChildId(childId);
-        long months = ChronoUnit.MONTHS.between(LocalDate.now(), targetDate);
-        if (months <= 0) return targetAmount;
-        BigDecimal remaining = targetAmount.subtract(balance);
-        if (remaining.compareTo(BigDecimal.ZERO) <= 0) return BigDecimal.ZERO;
-        return remaining.divide(BigDecimal.valueOf(months), 2, RoundingMode.CEILING);
+        return goalRepository.save(goal);
     }
 }

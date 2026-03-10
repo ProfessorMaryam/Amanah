@@ -7,7 +7,7 @@ __v0_jsx-dev-runtime.ts
 node_modules/
 .next/
 .env
-.env*.local
+.env.local
 .DS_Store
 
 # TypeScript build cache
@@ -54,3 +54,6 @@ Thumbs.db
 # Dependency directories
 !**/src/main/**
 !**/src/test/**
+
+# Backend config
+application.properties

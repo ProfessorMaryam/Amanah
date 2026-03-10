@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/actuator/health", "/error").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/stripe/webhook").permitAll()
                 .anyRequest().authenticated()
             )
             .headers(headers -> headers

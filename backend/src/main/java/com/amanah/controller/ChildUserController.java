@@ -2,11 +2,9 @@ package com.amanah.controller;
 
 import com.amanah.dto.ChildGoalRequest;
 import com.amanah.dto.ContributeRequest;
-import com.amanah.entity.Goal;
-import com.amanah.entity.GoalOwner;
+import com.amanah.entity.PersonalGoal;
 import com.amanah.entity.Transaction;
-import com.amanah.repository.GoalOwnerRepository;
-import com.amanah.repository.GoalRepository;
+import com.amanah.repository.PersonalGoalRepository;
 import com.amanah.repository.TransactionRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,48 +13,41 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 /**
  * Endpoints for child-role users to manage their own personal savings goals.
- * A child user's goals use owner_id = user UUID and child_id = NULL in goal_owners.
- * Transactions are stored with child_id = user UUID (reusing the bucket concept).
  */
 @RestController
 @RequestMapping("/api/my-goals")
 @RequiredArgsConstructor
 public class ChildUserController {
 
-    private final GoalOwnerRepository goalOwnerRepository;
-    private final GoalRepository goalRepository;
+    private final PersonalGoalRepository personalGoalRepository;
     private final TransactionRepository transactionRepository;
 
     // GET /api/my-goals — list all personal goals with balance + progress
     @GetMapping
     public ResponseEntity<List<Map<String, Object>>> listGoals(@AuthenticationPrincipal UUID userId) {
-        List<GoalOwner> owners = goalOwnerRepository.findAllByOwnerIdAndChildIdIsNull(userId);
+        List<PersonalGoal> goals = personalGoalRepository.findByUserId(userId);
         List<Map<String, Object>> result = new ArrayList<>();
-        for (GoalOwner owner : owners) {
-            goalRepository.findById(owner.getGoalId()).ifPresent(goal -> {
-                UUID bucketId = goal.getId(); // use goalId as transaction bucket for personal goals
-                BigDecimal balance = transactionRepository.sumByChildId(bucketId);
-                List<Transaction> txs = transactionRepository.findAllByChildIdOrderByDateDesc(bucketId);
+        for (PersonalGoal goal : goals) {
+            BigDecimal balance = transactionRepository.sumByChildId(goal.getId());
+            List<Transaction> txs = transactionRepository.findAllByChildIdOrderByDateDesc(goal.getId());
 
-                long months = ChronoUnit.MONTHS.between(LocalDate.now(), goal.getTargetDate());
-                Map<String, Object> entry = new LinkedHashMap<>();
-                entry.put("id", goal.getId());
-                entry.put("name", goal.getGoalType());
-                entry.put("targetAmount", goal.getTargetAmount());
-                entry.put("targetDate", goal.getTargetDate());
-                entry.put("currentAmount", balance);
-                entry.put("monthsRemaining", Math.max(0, months));
-                entry.put("isPaused", goal.isPaused());
-                entry.put("transactions", txs);
-                result.add(entry);
-            });
+            long months = ChronoUnit.MONTHS.between(LocalDate.now(), goal.getTargetDate());
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("id", goal.getId());
+            entry.put("name", goal.getGoalType());
+            entry.put("targetAmount", goal.getTargetAmount());
+            entry.put("targetDate", goal.getTargetDate());
+            entry.put("currentAmount", balance);
+            entry.put("monthsRemaining", Math.max(0, months));
+            entry.put("isPaused", goal.isPaused());
+            entry.put("transactions", txs);
+            result.add(entry);
         }
         return ResponseEntity.ok(result);
     }
@@ -65,26 +56,17 @@ public class ChildUserController {
     @PostMapping
     public ResponseEntity<Map<String, Object>> createGoal(@AuthenticationPrincipal UUID userId,
                                                            @Valid @RequestBody ChildGoalRequest req) {
-        Goal goal = new Goal();
-        goal.setGoalType(req.goalType());
-        goal.setTargetAmount(req.targetAmount());
-        goal.setTargetDate(req.targetDate());
+        PersonalGoal goal = PersonalGoal.builder()
+                .userId(userId)
+                .goalType(req.goalType())
+                .targetAmount(req.targetAmount())
+                .targetDate(req.targetDate())
+                .monthlyContribution(BigDecimal.ZERO)
+                .isPaused(false)
+                .build();
+        goal = personalGoalRepository.save(goal);
 
         long months = ChronoUnit.MONTHS.between(LocalDate.now(), req.targetDate());
-        BigDecimal monthly = months > 0
-                ? req.targetAmount().divide(BigDecimal.valueOf(months), 2, RoundingMode.CEILING)
-                : req.targetAmount();
-        goal.setMonthlyContribution(monthly);
-        goal.setPaused(false);
-        goal = goalRepository.save(goal);
-
-        GoalOwner owner = GoalOwner.builder()
-                .goalId(goal.getId())
-                .ownerId(userId)
-                .childId(null)
-                .build();
-        goalOwnerRepository.save(owner);
-
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("id", goal.getId());
         response.put("name", goal.getGoalType());
@@ -102,11 +84,9 @@ public class ChildUserController {
     public ResponseEntity<Transaction> contribute(@AuthenticationPrincipal UUID userId,
                                                    @PathVariable UUID goalId,
                                                    @Valid @RequestBody ContributeRequest req) {
-        // Verify ownership
-        goalOwnerRepository.findByOwnerIdAndGoalIdAndChildIdIsNull(userId, goalId)
+        personalGoalRepository.findByIdAndUserId(goalId, userId)
                 .orElseThrow(() -> new RuntimeException("Goal not found"));
 
-        // Use goalId as the transaction bucket for personal goals
         Transaction tx = Transaction.builder()
                 .childId(goalId)
                 .amount(req.amount())
@@ -119,12 +99,11 @@ public class ChildUserController {
     @DeleteMapping("/{goalId}")
     public ResponseEntity<Void> deleteGoal(@AuthenticationPrincipal UUID userId,
                                             @PathVariable UUID goalId) {
-        GoalOwner owner = goalOwnerRepository.findByOwnerIdAndGoalIdAndChildIdIsNull(userId, goalId)
+        PersonalGoal goal = personalGoalRepository.findByIdAndUserId(goalId, userId)
                 .orElseThrow(() -> new RuntimeException("Goal not found"));
 
         transactionRepository.deleteAllByChildId(goalId);
-        goalOwnerRepository.delete(owner);
-        goalRepository.deleteById(goalId);
+        personalGoalRepository.delete(goal);
         return ResponseEntity.noContent().build();
     }
 }

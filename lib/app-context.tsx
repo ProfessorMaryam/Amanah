@@ -21,6 +21,7 @@ interface BackendGoal {
   targetDate: string
   isPaused: boolean
   createdAt: string | null
+  stripeSubscriptionId: string | null
 }
 
 interface BackendTransaction {
@@ -130,6 +131,7 @@ interface AppContextType {
   setInvestment: (childId: string, investment: Investment) => Promise<void>
   setFutureInstructions: (childId: string, instructions: FutureInstructions) => Promise<void>
   getChild: (id: string) => Child | undefined
+  setStripeSubscriptionId: (childId: string, subscriptionId: string) => void
   totalSavings: number
   // Child user personal goals
   personalGoals: PersonalGoal[]
@@ -262,7 +264,8 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
               monthlyContribution: goal?.monthlyContribution ? parseFloat(goal.monthlyContribution) : 0,
               startDate: goal?.createdAt ? goal.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
               targetDate: goal?.targetDate ? goal.targetDate.split("T")[0] : new Date().toISOString().split("T")[0],
-              paused: (goal as any)?.paused ?? goal?.isPaused ?? false,
+              paused: goal?.isPaused ?? false,
+              stripeSubscriptionId: goal?.stripeSubscriptionId ?? undefined,
             },
             contributions: transactions.map((tx) => ({
               id: tx.id,
@@ -591,6 +594,19 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
     [childrenData]
   )
 
+  const setStripeSubscriptionId = useCallback(
+    (childId: string, subscriptionId: string) => {
+      setChildrenData((prev) =>
+        prev.map((c) =>
+          c.id === childId
+            ? { ...c, goal: { ...c.goal, stripeSubscriptionId: subscriptionId } }
+            : c
+        )
+      )
+    },
+    []
+  )
+
   const totalSavings = childrenData.reduce(
     (sum, c) => sum + c.goal.currentAmount,
     0
@@ -686,6 +702,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         setInvestment,
         setFutureInstructions,
         getChild,
+        setStripeSubscriptionId,
         totalSavings,
         personalGoals,
         createPersonalGoal,

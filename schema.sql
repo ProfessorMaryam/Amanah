@@ -21,25 +21,18 @@ CREATE TABLE public.fund_directives (
   CONSTRAINT fund_directives_pkey PRIMARY KEY (id),
   CONSTRAINT fund_directives_child_id_fkey FOREIGN KEY (child_id) REFERENCES public.children(id)
 );
-CREATE TABLE public.goal_owners (
-  goal_id uuid NOT NULL,
-  owner_id uuid NOT NULL,
-  child_id uuid,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT goal_owners_pkey PRIMARY KEY (goal_id, owner_id),
-  CONSTRAINT goal_owners_goal_fkey FOREIGN KEY (goal_id) REFERENCES public.goals(id),
-  CONSTRAINT goal_owners_owner_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id),
-  CONSTRAINT goal_owners_child_fkey FOREIGN KEY (child_id) REFERENCES public.children(id)
-);
 CREATE TABLE public.goals (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  goal_type USER-DEFINED NOT NULL,
+  goal_type text NOT NULL,
   target_amount numeric NOT NULL CHECK (target_amount >= 0::numeric),
   target_date date NOT NULL,
   monthly_contribution numeric NOT NULL CHECK (monthly_contribution >= 0::numeric),
   is_paused boolean DEFAULT false,
   created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT goals_pkey PRIMARY KEY (id)
+  child_id uuid,
+  stripe_subscription_id text,
+  CONSTRAINT goals_pkey PRIMARY KEY (id),
+  CONSTRAINT goals_child_id_fkey FOREIGN KEY (child_id) REFERENCES public.children(id)
 );
 CREATE TABLE public.investment_portfolios (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -50,6 +43,18 @@ CREATE TABLE public.investment_portfolios (
   last_updated timestamp with time zone DEFAULT now(),
   CONSTRAINT investment_portfolios_pkey PRIMARY KEY (id),
   CONSTRAINT investment_portfolios_child_id_fkey FOREIGN KEY (child_id) REFERENCES public.children(id)
+);
+CREATE TABLE public.personal_goals (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  goal_type text NOT NULL,
+  target_amount numeric NOT NULL CHECK (target_amount >= 0::numeric),
+  target_date date NOT NULL,
+  monthly_contribution numeric DEFAULT 0 CHECK (monthly_contribution >= 0::numeric),
+  is_paused boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT personal_goals_pkey PRIMARY KEY (id),
+  CONSTRAINT personal_goals_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.transactions (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -67,6 +72,6 @@ CREATE TABLE public.users (
   phone text,
   role USER-DEFINED NOT NULL DEFAULT 'child'::user_role,
   created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT users_pkey PRIMARY KEY (id),
-  CONSTRAINT users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+  password text DEFAULT 'pass'::text,
+  CONSTRAINT users_pkey PRIMARY KEY (id)
 );
