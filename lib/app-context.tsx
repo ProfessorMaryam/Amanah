@@ -53,6 +53,7 @@ interface BackendChildDetail {
 
 interface BackendUser {
   fullName: string | null
+  email: string | null
   role: "parent" | "child" | null
 }
 
@@ -81,6 +82,7 @@ const PORTFOLIO_GROWTH_RATES: Record<string, number> = {
   BALANCED: 7,
   GROWTH: 10,
 }
+
 
 function mapBackendInvestment(portfolio: BackendInvestmentPortfolio): Investment {
   const type = portfolio.portfolioType.toUpperCase()
@@ -139,10 +141,13 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export function AppProvider({ children: childrenNode }: { children: ReactNode }) {
-  const [user, setUser] = useState(mockUser)
+  const { token, user: authUser } = useAuth()
+  const [user, setUser] = useState(() => ({
+    ...mockUser,
+    ...(authUser ? { name: authUser.fullName ?? mockUser.name, email: authUser.email, role: authUser.role as "parent" | "child" } : {}),
+  }))
   const [childrenData, setChildrenData] = useState<Child[]>([])
   const [personalGoals, setPersonalGoals] = useState<PersonalGoal[]>([])
-  const { token } = useAuth()
 
   // ----- Helpers -----
 
@@ -187,6 +192,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
           setUser((prev) => ({
             ...prev,
             name: userData.fullName ?? prev.name,
+            email: userData.email ?? prev.email,
             role: userData.role ?? prev.role,
           }))
         } else {
@@ -341,7 +347,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
           method: "POST",
           headers: apiHeaders(),
           body: JSON.stringify({
-            goalType: child.goal.name || "EDUCATION",
+            goalType: child.goal.name || "General",
             targetAmount: child.goal.targetAmount,
             targetDate: child.goal.targetDate,
             monthlyContribution: child.goal.monthlyContribution ?? 0,
@@ -410,7 +416,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
           method: "POST",
           headers: apiHeaders(),
           body: JSON.stringify({
-            goalType: mergedGoal.name || "EDUCATION",
+            goalType: mergedGoal.name || "General",
             targetAmount: mergedGoal.targetAmount,
             targetDate: mergedGoal.targetDate,
             monthlyContribution: mergedGoal.monthlyContribution ?? 0,
@@ -470,7 +476,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         method: "POST",
         headers: apiHeaders(),
         body: JSON.stringify({
-          goalType: child.goal.name || "EDUCATION",
+          goalType: child.goal.name || "General",
           targetAmount: child.goal.targetAmount,
           targetDate: child.goal.targetDate,
           monthlyContribution: child.goal.monthlyContribution ?? 0,

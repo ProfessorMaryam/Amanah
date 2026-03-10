@@ -48,7 +48,7 @@ public class ChildUserController {
                 long months = ChronoUnit.MONTHS.between(LocalDate.now(), goal.getTargetDate());
                 Map<String, Object> entry = new LinkedHashMap<>();
                 entry.put("id", goal.getId());
-                entry.put("name", goal.getGoalType().name());
+                entry.put("name", goal.getGoalType());
                 entry.put("targetAmount", goal.getTargetAmount());
                 entry.put("targetDate", goal.getTargetDate());
                 entry.put("currentAmount", balance);
@@ -87,7 +87,7 @@ public class ChildUserController {
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("id", goal.getId());
-        response.put("name", goal.getGoalType().name());
+        response.put("name", goal.getGoalType());
         response.put("targetAmount", goal.getTargetAmount());
         response.put("targetDate", goal.getTargetDate());
         response.put("currentAmount", BigDecimal.ZERO);

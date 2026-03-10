@@ -35,7 +35,7 @@ public class GoalService {
     }
 
     @Transactional
-    public Goal createOrUpdateGoal(UUID childId, Goal.GoalType type,
+    public Goal createOrUpdateGoal(UUID childId, String type,
                                    BigDecimal targetAmount, LocalDate targetDate,
                                    BigDecimal monthlyOverride, boolean paused) {
         Optional<GoalOwner> existingOwner = goalOwnerRepository.findByChildId(childId);

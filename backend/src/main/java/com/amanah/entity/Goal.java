@@ -17,9 +17,8 @@ public class Goal {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "goal_type", nullable = false)
-    private GoalType goalType;
+    private String goalType;
 
     @Column(name = "target_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal targetAmount;
@@ -36,10 +35,4 @@ public class Goal {
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private java.time.OffsetDateTime createdAt;
-
-    public enum GoalType {
-        UNIVERSITY, CAR, WEDDING, BUSINESS, GENERAL,
-        // Child-user personal goal presets
-        BICYCLE, GAME, TRIP, GADGET, SPORTS, BOOK, PET, CLOTHES, CAMP, OTHER
-    }
 }

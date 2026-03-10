@@ -21,9 +21,9 @@ export default function AddChildPage() {
   const [targetAmount, setTargetAmount] = useState("")
   const [targetDate, setTargetDate] = useState("")
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    addChild({
+    await addChild({
       id: "",
       name: childName,
       dateOfBirth,
