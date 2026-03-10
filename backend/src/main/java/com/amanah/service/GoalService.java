@@ -30,7 +30,8 @@ public class GoalService {
     }
 
     public Optional<Goal> findByChild(UUID childId) {
-        return goalOwnerRepository.findByChildId(childId)
+        return goalOwnerRepository.findAllByChildId(childId).stream()
+                .findFirst()
                 .flatMap(owner -> goalRepository.findById(owner.getGoalId()));
     }
 
@@ -38,7 +39,7 @@ public class GoalService {
     public Goal createOrUpdateGoal(UUID childId, String type,
                                    BigDecimal targetAmount, LocalDate targetDate,
                                    BigDecimal monthlyOverride, boolean paused) {
-        Optional<GoalOwner> existingOwner = goalOwnerRepository.findByChildId(childId);
+        Optional<GoalOwner> existingOwner = goalOwnerRepository.findAllByChildId(childId).stream().findFirst();
         Goal goal = existingOwner
                 .flatMap(o -> goalRepository.findById(o.getGoalId()))
                 .orElse(new Goal());

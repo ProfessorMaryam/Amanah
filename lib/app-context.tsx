@@ -261,8 +261,8 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
               currentAmount: savingsBalance ? parseFloat(String(savingsBalance)) : 0,
               monthlyContribution: goal?.monthlyContribution ? parseFloat(goal.monthlyContribution) : 0,
               startDate: goal?.createdAt ? goal.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
-              targetDate: goal?.targetDate ?? new Date().toISOString().split("T")[0],
-              paused: goal?.isPaused ?? false,
+              targetDate: goal?.targetDate ? goal.targetDate.split("T")[0] : new Date().toISOString().split("T")[0],
+              paused: (goal as any)?.paused ?? goal?.isPaused ?? false,
             },
             contributions: transactions.map((tx) => ({
               id: tx.id,
@@ -417,8 +417,8 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
           headers: apiHeaders(),
           body: JSON.stringify({
             goalType: mergedGoal.name || "General",
-            targetAmount: mergedGoal.targetAmount,
-            targetDate: mergedGoal.targetDate,
+            targetAmount: Number(mergedGoal.targetAmount),
+            targetDate: mergedGoal.targetDate?.split("T")[0],
             monthlyContribution: mergedGoal.monthlyContribution ?? 0,
             paused: mergedGoal.paused ?? false,
           }),
@@ -469,7 +469,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
       if (!token) return
 
       const child = childrenData.find((c) => c.id === childId)
-      if (!child) return
+      if (!child || !child.goal) return
 
       const newPaused = !child.goal.paused
       const res = await fetch(apiUrl(`/api/children/${childId}/goal`), {
@@ -477,8 +477,8 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         headers: apiHeaders(),
         body: JSON.stringify({
           goalType: child.goal.name || "General",
-          targetAmount: child.goal.targetAmount,
-          targetDate: child.goal.targetDate,
+          targetAmount: Number(child.goal.targetAmount),
+          targetDate: child.goal.targetDate?.split("T")[0],
           monthlyContribution: child.goal.monthlyContribution ?? 0,
           paused: newPaused,
         }),
