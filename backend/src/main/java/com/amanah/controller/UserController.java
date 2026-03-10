@@ -19,9 +19,8 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<User> getProfile(@AuthenticationPrincipal UUID userId,
-                                           @RequestHeader("X-User-Email") String email) {
-        return ResponseEntity.ok(userService.getOrCreate(userId, email));
+    public ResponseEntity<User> getProfile(@AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(userService.getById(userId));
     }
 
     @PutMapping

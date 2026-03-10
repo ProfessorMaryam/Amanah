@@ -1,9 +1,11 @@
 package com.amanah.service;
 
 import com.amanah.entity.Child;
-import com.amanah.repository.ChildRepository;
+import com.amanah.entity.GoalOwner;
+import com.amanah.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -13,6 +15,11 @@ import java.util.UUID;
 public class ChildService {
 
     private final ChildRepository childRepository;
+    private final TransactionRepository transactionRepository;
+    private final InvestmentPortfolioRepository investmentPortfolioRepository;
+    private final FundDirectiveRepository fundDirectiveRepository;
+    private final GoalOwnerRepository goalOwnerRepository;
+    private final GoalRepository goalRepository;
 
     public List<Child> getChildren(UUID parentId) {
         return childRepository.findAllByParentId(parentId);
@@ -41,8 +48,28 @@ public class ChildService {
         return childRepository.save(child);
     }
 
+    @Transactional
     public void deleteChild(UUID id, UUID parentId) {
         Child child = getChild(id, parentId);
+
+        // 1. Delete transactions
+        transactionRepository.deleteAllByChildId(id);
+
+        // 2. Delete investment portfolio
+        investmentPortfolioRepository.deleteByChildId(id);
+
+        // 3. Delete fund directive
+        fundDirectiveRepository.deleteByChildId(id);
+
+        // 4. Collect goal IDs linked to this child, delete goal_owners, then the goals
+        List<GoalOwner> goalOwners = goalOwnerRepository.findAllByChildId(id);
+        List<UUID> goalIds = goalOwners.stream().map(GoalOwner::getGoalId).toList();
+        goalOwnerRepository.deleteAllByChildId(id);
+        if (!goalIds.isEmpty()) {
+            goalRepository.deleteAllById(goalIds);
+        }
+
+        // 5. Delete the child
         childRepository.delete(child);
     }
 }

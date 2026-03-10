@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Heart } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { setAuthSession } from "@/lib/auth-context"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -19,32 +19,36 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
 
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError(null)
     setMessage(null)
 
-    if (isLogin) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) {
-        setError(error.message)
-      } else {
-        router.push("/dashboard")
-      }
-    } else {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: name } },
+    const endpoint = isLogin ? "/api/auth/login" : "/api/auth/signup"
+    const body = isLogin
+      ? { email, password }
+      : { email, password, fullName: name }
+
+    try {
+      const res = await fetch(`${apiBase}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       })
-      if (error) {
-        setError(error.message)
-      } else if (data.session) {
-        router.push("/dashboard")
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || "Something went wrong")
       } else {
-        setMessage("Check your email to confirm your account, then sign in.")
+        setAuthSession(data.token, data.user)
+        router.push("/dashboard")
       }
+    } catch {
+      setError("Could not connect to server")
     }
 
     setLoading(false)

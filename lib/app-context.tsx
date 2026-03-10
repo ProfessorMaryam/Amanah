@@ -142,15 +142,14 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
   const [user, setUser] = useState(mockUser)
   const [childrenData, setChildrenData] = useState<Child[]>([])
   const [personalGoals, setPersonalGoals] = useState<PersonalGoal[]>([])
-  const { session } = useAuth()
+  const { token } = useAuth()
 
   // ----- Helpers -----
 
   function apiHeaders() {
     return {
-      Authorization: `Bearer ${session!.access_token}`,
+      Authorization: `Bearer ${token!}`,
       "Content-Type": "application/json",
-      "X-User-Email": session!.user?.email ?? "",
     }
   }
 
@@ -162,26 +161,20 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
   // ----- Fetch all data from backend -----
 
   useEffect(() => {
-    if (!session) {
+    if (!token) {
       console.log("[AppContext] No session — loading mock data")
       setChildrenData(mockChildren)
       return
     }
 
-    console.log("[AppContext] Session detected, user:", session.user?.email)
-
     const controller = new AbortController()
 
     const fetchData = async () => {
       try {
-        const token = session.access_token
         const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-        console.log("[AppContext] API URL:", base)
-        console.log("[AppContext] Token (first 20 chars):", token?.slice(0, 20))
 
         const headers = {
           Authorization: `Bearer ${token}`,
-          "X-User-Email": session.user?.email ?? "",
         }
 
         // Fetch user profile
@@ -318,13 +311,13 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
 
     fetchData()
     return () => controller.abort()
-  }, [session])
+  }, [token])
 
   // ----- Write operations wired to backend -----
 
   const addChild = useCallback(
     async (child: Omit<Child, "id" | "contributions" | "investment" | "futureInstructions">) => {
-      if (!session) return
+      if (!token) return
 
       // 1. Create the child
       const childRes = await fetch(apiUrl("/api/children"), {
@@ -383,12 +376,12 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         },
       ])
     },
-    [session]
+    [token]
   )
 
   const updateChild = useCallback(
     async (id: string, updates: ChildUpdates) => {
-      if (!session) return
+      if (!token) return
 
       const existing = childrenData.find((c) => c.id === id)
       if (!existing) return
@@ -444,12 +437,12 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         })
       )
     },
-    [session, childrenData]
+    [token, childrenData]
   )
 
   const deleteChild = useCallback(
     async (id: string) => {
-      if (!session) return
+      if (!token) return
 
       const res = await fetch(apiUrl(`/api/children/${id}`), {
         method: "DELETE",
@@ -462,12 +455,12 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
 
       setChildrenData((prev) => prev.filter((c) => c.id !== id))
     },
-    [session]
+    [token]
   )
 
   const togglePausedGoal = useCallback(
     async (childId: string) => {
-      if (!session) return
+      if (!token) return
 
       const child = childrenData.find((c) => c.id === childId)
       if (!child) return
@@ -497,12 +490,12 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         )
       )
     },
-    [session, childrenData]
+    [token, childrenData]
   )
 
   const addContribution = useCallback(
     async (childId: string, amount: number, note?: string) => {
-      if (!session) return
+      if (!token) return
 
       const res = await fetch(apiUrl(`/api/children/${childId}/contribute`), {
         method: "POST",
@@ -535,12 +528,12 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         )
       )
     },
-    [session]
+    [token]
   )
 
   const setInvestment = useCallback(
     async (childId: string, investment: Investment) => {
-      if (!session) return
+      if (!token) return
 
       const res = await fetch(apiUrl(`/api/children/${childId}/investment`), {
         method: "POST",
@@ -559,12 +552,12 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         prev.map((c) => c.id === childId ? { ...c, investment } : c)
       )
     },
-    [session]
+    [token]
   )
 
   const setFutureInstructions = useCallback(
     async (childId: string, instructions: FutureInstructions) => {
-      if (!session) return
+      if (!token) return
 
       const res = await fetch(apiUrl(`/api/children/${childId}/directive`), {
         method: "POST",
@@ -584,7 +577,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         prev.map((c) => c.id === childId ? { ...c, futureInstructions: instructions } : c)
       )
     },
-    [session]
+    [token]
   )
 
   const getChild = useCallback(
@@ -599,7 +592,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
 
   const createPersonalGoal = useCallback(
     async (goalType: string, targetAmount: number, targetDate: string) => {
-      if (!session) return
+      if (!token) return
       const res = await fetch(apiUrl("/api/my-goals"), {
         method: "POST",
         headers: apiHeaders(),
@@ -624,12 +617,12 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         },
       ])
     },
-    [session]
+    [token]
   )
 
   const contributeToPersonalGoal = useCallback(
     async (goalId: string, amount: number) => {
-      if (!session) return
+      if (!token) return
       const res = await fetch(apiUrl(`/api/my-goals/${goalId}/contribute`), {
         method: "POST",
         headers: apiHeaders(),
@@ -655,12 +648,12 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         )
       )
     },
-    [session]
+    [token]
   )
 
   const deletePersonalGoal = useCallback(
     async (goalId: string) => {
-      if (!session) return
+      if (!token) return
       const res = await fetch(apiUrl(`/api/my-goals/${goalId}`), {
         method: "DELETE",
         headers: apiHeaders(),
@@ -671,7 +664,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
       }
       setPersonalGoals((prev) => prev.filter((g) => g.id !== goalId))
     },
-    [session]
+    [token]
   )
 
   return (

@@ -1,50 +1,58 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import type { User, Session } from "@supabase/supabase-js"
-import { supabase } from "./supabase"
+
+export interface AuthUser {
+  id: string
+  email: string
+  fullName: string | null
+  role: string
+}
 
 interface AuthContextType {
-  user: User | null
-  session: Session | null
+  user: AuthUser | null
+  token: string | null
   loading: boolean
-  signOut: () => Promise<void>
+  signOut: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const TOKEN_KEY = "amanah_token"
+const USER_KEY = "amanah_user"
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
+    const storedToken = localStorage.getItem(TOKEN_KEY)
+    const storedUser = localStorage.getItem(USER_KEY)
+    if (storedToken && storedUser) {
+      setToken(storedToken)
+      setUser(JSON.parse(storedUser))
+    }
+    setLoading(false)
   }, [])
 
-  const signOut = async () => {
-    await supabase.auth.signOut()
+  const signOut = () => {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
+    setToken(null)
+    setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ user, token, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   )
+}
+
+export function setAuthSession(token: string, user: AuthUser) {
+  localStorage.setItem(TOKEN_KEY, token)
+  localStorage.setItem(USER_KEY, JSON.stringify(user))
 }
 
 export function useAuth() {

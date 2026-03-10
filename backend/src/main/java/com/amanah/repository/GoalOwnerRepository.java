@@ -12,6 +12,7 @@ import java.util.UUID;
 public interface GoalOwnerRepository extends JpaRepository<GoalOwner, GoalOwner.GoalOwnerId> {
     Optional<GoalOwner> findByChildId(UUID childId);
     List<GoalOwner> findAllByChildIdIn(List<UUID> childIds);
+    void deleteAllByChildId(UUID childId);
 
     @Query("SELECT go FROM GoalOwner go WHERE go.childId = :childId ORDER BY go.goalId")
     List<GoalOwner> findAllByChildId(@Param("childId") UUID childId);

@@ -10,4 +10,5 @@ import java.util.UUID;
 public interface InvestmentPortfolioRepository extends JpaRepository<InvestmentPortfolio, UUID> {
     Optional<InvestmentPortfolio> findByChildId(UUID childId);
     List<InvestmentPortfolio> findAllByChildIdIn(List<UUID> childIds);
+    void deleteByChildId(UUID childId);
 }

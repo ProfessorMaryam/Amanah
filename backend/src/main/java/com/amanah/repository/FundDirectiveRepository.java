@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface FundDirectiveRepository extends JpaRepository<FundDirective, UUID> {
     Optional<FundDirective> findByChildId(UUID childId);
+    void deleteByChildId(UUID childId);
 }

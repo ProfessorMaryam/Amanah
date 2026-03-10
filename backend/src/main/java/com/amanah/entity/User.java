@@ -29,6 +29,9 @@ public class User {
     @Column(name = "role", nullable = false)
     private UserRole role = UserRole.parent;
 
+    @Column(name = "password")
+    private String password;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private OffsetDateTime createdAt;
 
