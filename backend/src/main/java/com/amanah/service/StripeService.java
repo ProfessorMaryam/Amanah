@@ -3,9 +3,11 @@ package com.amanah.service;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
+import com.stripe.model.Price;
 import com.stripe.model.Subscription;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.CustomerUpdateParams;
+import com.stripe.param.PriceCreateParams;
 import com.stripe.param.SubscriptionCancelParams;
 import com.stripe.param.SubscriptionCreateParams;
 import com.stripe.param.SubscriptionUpdateParams;
@@ -55,17 +57,22 @@ public class StripeService {
             // BHD uses fils (1 BHD = 1000 fils), so multiply by 1000
             long unitAmount = monthlyAmount.multiply(BigDecimal.valueOf(1000)).longValue();
 
+            // Create a Price first (the /v1/prices endpoint supports inline product_data)
+            PriceCreateParams priceParams = PriceCreateParams.builder()
+                    .setCurrency("bhd")
+                    .setUnitAmount(unitAmount)
+                    .setRecurring(PriceCreateParams.Recurring.builder()
+                            .setInterval(PriceCreateParams.Recurring.Interval.MONTH)
+                            .build())
+                    .putExtraParam("product_data[name]", "Monthly Child Savings Contribution")
+                    .build();
+            Price price = Price.create(priceParams);
+
+            // Create the subscription referencing the price ID
             SubscriptionCreateParams params = SubscriptionCreateParams.builder()
                     .setCustomer(customerId)
                     .addItem(SubscriptionCreateParams.Item.builder()
-                            .setPriceData(SubscriptionCreateParams.Item.PriceData.builder()
-                                    .setCurrency("bhd")
-                                    .setUnitAmount(unitAmount)
-                                    .setRecurring(SubscriptionCreateParams.Item.PriceData.Recurring.builder()
-                                            .setInterval(SubscriptionCreateParams.Item.PriceData.Recurring.Interval.MONTH)
-                                            .build())
-                                    .putExtraParam("product_data", java.util.Map.of("name", "Monthly Child Savings Contribution"))
-                                    .build())
+                            .setPrice(price.getId())
                             .build())
                     .build();
 

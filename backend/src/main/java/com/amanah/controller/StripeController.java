@@ -16,6 +16,7 @@ import com.stripe.param.SetupIntentCreateParams;
 import com.stripe.model.SetupIntent;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,6 +26,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/stripe")
 @RequiredArgsConstructor
@@ -69,6 +71,7 @@ public class StripeController {
             SetupIntentCreateParams params = SetupIntentCreateParams.builder()
                     .setCustomer(customerId)
                     .addPaymentMethodType("card")
+                    .setUsage(SetupIntentCreateParams.Usage.OFF_SESSION)
                     .build();
             SetupIntent intent = SetupIntent.create(params);
             return ResponseEntity.ok(Map.of(
@@ -87,7 +90,9 @@ public class StripeController {
             @RequestBody Map<String, String> body) {
 
         String paymentMethodId = body.get("paymentMethodId");
+        log.warn("subscribe: childId={} paymentMethodId={} body={}", childId, paymentMethodId, body);
         if (paymentMethodId == null || paymentMethodId.isBlank()) {
+            log.warn("subscribe: rejected — paymentMethodId is null/blank");
             return ResponseEntity.badRequest().build();
         }
 
@@ -106,11 +111,19 @@ public class StripeController {
         }
 
         BigDecimal amount = goal.getMonthlyContribution();
+        log.warn("subscribe: monthlyContribution={}", amount);
         if (amount == null || amount.compareTo(BigDecimal.ZERO) == 0) {
             return ResponseEntity.badRequest().build();
         }
 
-        String subscriptionId = stripeService.createSubscription(customerId, paymentMethodId, amount);
+        String subscriptionId;
+        try {
+            subscriptionId = stripeService.createSubscription(customerId, paymentMethodId, amount);
+        } catch (Exception e) {
+            log.error("subscribe: createSubscription failed — customerId={} paymentMethodId={} amount={} error={}",
+                    customerId, paymentMethodId, amount, e.getMessage(), e);
+            throw e;
+        }
         goal.setStripeSubscriptionId(subscriptionId);
         goalRepository.save(goal);
 

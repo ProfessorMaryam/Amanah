@@ -55,7 +55,8 @@ function SetupForm({ childId, customerId, onSuccess, token }: SetupFormProps) {
       return
     }
 
-    const paymentMethodId = result.setupIntent?.payment_method as string | undefined
+    const pm = result.setupIntent?.payment_method
+    const paymentMethodId = typeof pm === "string" ? pm : (pm as any)?.id as string | undefined
     if (!paymentMethodId) {
       setError("No payment method returned")
       setLoading(false)

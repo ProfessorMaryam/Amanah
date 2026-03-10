@@ -20,6 +20,7 @@ export default function AddChildPage() {
   const [goalName, setGoalName] = useState("")
   const [targetAmount, setTargetAmount] = useState("")
   const [targetDate, setTargetDate] = useState("")
+  const [monthlyContribution, setMonthlyContribution] = useState("")
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -31,6 +32,7 @@ export default function AddChildPage() {
         name: goalName || "Savings Goal",
         targetAmount: parseFloat(targetAmount) || 10000,
         currentAmount: 0,
+        monthlyContribution: parseFloat(monthlyContribution) || 0,
         startDate: new Date().toISOString().split("T")[0],
         targetDate: targetDate || "2035-01-01",
       },
@@ -122,6 +124,24 @@ export default function AddChildPage() {
                   placeholder="Enter target savings amount"
                   value={targetAmount}
                   onChange={(e) => setTargetAmount(e.target.value)}
+                  className="h-12 text-base bg-amanah-cream border-input"
+                  required
+                />
+              </div>
+
+              {/* Monthly Contribution */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="monthlyContribution" className="text-base font-medium text-amanah-plum">
+                  Monthly Contribution (BHD)
+                </Label>
+                <Input
+                  id="monthlyContribution"
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="Amount to contribute each month"
+                  value={monthlyContribution}
+                  onChange={(e) => setMonthlyContribution(e.target.value)}
                   className="h-12 text-base bg-amanah-cream border-input"
                   required
                 />
