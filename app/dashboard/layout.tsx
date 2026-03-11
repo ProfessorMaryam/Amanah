@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { AppProvider } from "@/lib/app-context"
 import { useAuth } from "@/lib/auth-context"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -32,6 +32,24 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function DashboardShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  // Child-view has its own full-screen gamified layout with its own sidebar
+  if (pathname.startsWith("/dashboard/child-view")) {
+    return <>{children}</>
+  }
+  return (
+    <div className="flex min-h-screen bg-background">
+      <AppSidebar />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardLayout({
   children,
 }: {
@@ -40,14 +58,9 @@ export default function DashboardLayout({
   return (
     <AuthGuard>
       <AppProvider>
-        <div className="flex min-h-screen bg-background">
-          <AppSidebar />
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <main className="flex-1 overflow-y-auto">
-              {children}
-            </main>
-          </div>
-        </div>
+        <DashboardShell>
+          {children}
+        </DashboardShell>
       </AppProvider>
     </AuthGuard>
   )

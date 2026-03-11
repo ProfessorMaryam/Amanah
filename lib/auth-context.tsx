@@ -13,6 +13,7 @@ interface AuthContextType {
   user: AuthUser | null
   token: string | null
   loading: boolean
+  setSession: (token: string, user: AuthUser) => void
   signOut: () => void
 }
 
@@ -36,6 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false)
   }, [])
 
+  const setSession = (newToken: string, newUser: AuthUser) => {
+    localStorage.setItem(TOKEN_KEY, newToken)
+    localStorage.setItem(USER_KEY, JSON.stringify(newUser))
+    setToken(newToken)
+    setUser(newUser)
+  }
+
   const signOut = () => {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
@@ -44,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, signOut }}>
+    <AuthContext.Provider value={{ user, token, loading, setSession, signOut }}>
       {children}
     </AuthContext.Provider>
   )

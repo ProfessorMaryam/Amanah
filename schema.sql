@@ -8,6 +8,7 @@ CREATE TABLE public.children (
   date_of_birth date,
   photo_url text,
   created_at timestamp with time zone DEFAULT now(),
+  stripe_customer_id text,
   CONSTRAINT children_pkey PRIMARY KEY (id),
   CONSTRAINT children_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.users(id)
 );
@@ -62,8 +63,7 @@ CREATE TABLE public.transactions (
   amount numeric NOT NULL,
   date timestamp with time zone DEFAULT now(),
   type USER-DEFINED NOT NULL,
-  CONSTRAINT transactions_pkey PRIMARY KEY (id),
-  CONSTRAINT transactions_child_id_fkey FOREIGN KEY (child_id) REFERENCES public.children(id)
+  CONSTRAINT transactions_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.users (
   id uuid NOT NULL,

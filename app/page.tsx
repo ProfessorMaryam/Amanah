@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Heart } from "lucide-react"
-import { setAuthSession } from "@/lib/auth-context"
+import { useAuth } from "@/lib/auth-context"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { setSession } = useAuth()
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -44,7 +45,7 @@ export default function LoginPage() {
       if (!res.ok) {
         setError(data.error || "Something went wrong")
       } else {
-        setAuthSession(data.token, data.user)
+        setSession(data.token, data.user)
         router.push("/dashboard")
       }
     } catch {

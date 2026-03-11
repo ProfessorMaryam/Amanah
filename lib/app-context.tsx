@@ -143,11 +143,8 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export function AppProvider({ children: childrenNode }: { children: ReactNode }) {
-  const { token, user: authUser } = useAuth()
-  const [user, setUser] = useState(() => ({
-    ...mockUser,
-    ...(authUser ? { name: authUser.fullName ?? mockUser.name, email: authUser.email, role: authUser.role as "parent" | "child" } : {}),
-  }))
+  const { token } = useAuth()
+  const [user, setUser] = useState({ ...mockUser })
   const [childrenData, setChildrenData] = useState<Child[]>([])
   const [personalGoals, setPersonalGoals] = useState<PersonalGoal[]>([])
 
@@ -200,6 +197,28 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         } else {
           const errText = await userResponse.text()
           console.error("[AppContext] /api/me error body:", errText)
+        }
+
+        // Fetch personal goals (child-role users) — runs independently of children fetch
+        const goalsRes = await fetch(`${base}/api/my-goals`, { headers, signal: controller.signal })
+        if (goalsRes.ok) {
+          const raw = await goalsRes.json()
+          setPersonalGoals(
+            raw.map((g: any) => ({
+              id: String(g.id),
+              name: String(g.name),
+              targetAmount: parseFloat(String(g.targetAmount)),
+              targetDate: String(g.targetDate),
+              currentAmount: parseFloat(String(g.currentAmount ?? 0)),
+              monthsRemaining: Number(g.monthsRemaining ?? 0),
+              isPaused: Boolean(g.isPaused),
+              transactions: (g.transactions ?? []).map((t: any) => ({
+                id: String(t.id),
+                amount: parseFloat(String(t.amount)),
+                date: t.date ? new Date(t.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+              })),
+            }))
+          )
         }
 
         // Fetch children list
@@ -290,27 +309,6 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         console.log("[AppContext] Setting children data:", transformedChildren.length, "children")
         setChildrenData(transformedChildren)
 
-        // Fetch personal goals for child-role users
-        const goalsRes = await fetch(`${base}/api/my-goals`, { headers, signal: controller.signal })
-        if (goalsRes.ok) {
-          const raw = await goalsRes.json()
-          setPersonalGoals(
-            raw.map((g: any) => ({
-              id: String(g.id),
-              name: String(g.name),
-              targetAmount: parseFloat(String(g.targetAmount)),
-              targetDate: String(g.targetDate),
-              currentAmount: parseFloat(String(g.currentAmount ?? 0)),
-              monthsRemaining: Number(g.monthsRemaining ?? 0),
-              isPaused: Boolean(g.isPaused),
-              transactions: (g.transactions ?? []).map((t: any) => ({
-                id: String(t.id),
-                amount: parseFloat(String(t.amount)),
-                date: new Date(t.date).toISOString().split("T")[0],
-              })),
-            }))
-          )
-        }
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
           console.error("[AppContext] Failed to fetch data:", error)

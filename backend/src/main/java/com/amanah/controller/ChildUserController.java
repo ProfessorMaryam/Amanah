@@ -7,6 +7,7 @@ import com.amanah.entity.Transaction;
 import com.amanah.repository.PersonalGoalRepository;
 import com.amanah.repository.TransactionRepository;
 import jakarta.validation.Valid;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -96,6 +97,7 @@ public class ChildUserController {
     }
 
     // DELETE /api/my-goals/{goalId} — delete a personal goal
+    @Transactional
     @DeleteMapping("/{goalId}")
     public ResponseEntity<Void> deleteGoal(@AuthenticationPrincipal UUID userId,
                                             @PathVariable UUID goalId) {

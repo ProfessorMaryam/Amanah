@@ -111,3 +111,53 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ── Child game animations ───────────────────────────────────────────────── */
+
+@keyframes child-bob {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+@keyframes child-bounce {
+  0%, 100% { transform: scale(1); }
+  30%       { transform: scale(1.15) rotate(-3deg); }
+  60%       { transform: scale(0.95) rotate(2deg); }
+}
+
+@keyframes child-float {
+  0%, 100% { transform: translate(0, 0); }
+  25%       { transform: translate(3px, -4px); }
+  75%       { transform: translate(-3px, -2px); }
+}
+
+@keyframes child-sparkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50%       { opacity: 1;   transform: scale(1.2); }
+}
+
+@keyframes child-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+.child-bob {
+  animation: child-bob 2.5s ease-in-out infinite;
+}
+
+.child-bounce {
+  animation: child-bounce 0.5s ease-in-out;
+}
+
+.child-float {
+  animation: child-float 4s ease-in-out infinite;
+}
+
+.child-sparkle {
+  animation: child-sparkle 2s ease-in-out infinite;
+}
+
+.child-shimmer {
+  background-size: 200% auto;
+  animation: child-shimmer 3s linear infinite;
+}
