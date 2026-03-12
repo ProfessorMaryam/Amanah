@@ -16,11 +16,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
+  const [role, setRole] = useState<"parent" | "child">("parent")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8742"
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -31,7 +32,7 @@ export default function LoginPage() {
     const endpoint = isLogin ? "/api/auth/login" : "/api/auth/signup"
     const body = isLogin
       ? { email, password }
-      : { email, password, fullName: name }
+      : { email, password, fullName: name, role }
 
     try {
       const res = await fetch(`${apiBase}${endpoint}`, {
@@ -85,20 +86,52 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               {!isLogin && (
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="name" className="text-base font-medium text-amanah-plum">
-                    Full Name
-                  </Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="h-12 text-base bg-amanah-cream border-input"
-                    required
-                  />
-                </div>
+                <>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="name" className="text-base font-medium text-amanah-plum">
+                      Full Name
+                    </Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="h-12 text-base bg-amanah-cream border-input"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-base font-medium text-amanah-plum">I am a</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setRole("parent")}
+                        className={`flex flex-col items-center gap-1 rounded-xl border-2 py-4 text-sm font-semibold transition-colors ${
+                          role === "parent"
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-input bg-amanah-cream text-amanah-plum hover:border-primary/50"
+                        }`}
+                      >
+                        <span className="text-2xl">👨‍👩‍👧</span>
+                        Parent
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRole("child")}
+                        className={`flex flex-col items-center gap-1 rounded-xl border-2 py-4 text-sm font-semibold transition-colors ${
+                          role === "child"
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-input bg-amanah-cream text-amanah-plum hover:border-primary/50"
+                        }`}
+                      >
+                        <span className="text-2xl">🧒</span>
+                        Child
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
 
               <div className="flex flex-col gap-2">

@@ -17,7 +17,7 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody AuthRequest req) {
         try {
-            AuthResponse response = userService.signup(req.email(), req.password(), req.fullName());
+            AuthResponse response = userService.signup(req.email(), req.password(), req.fullName(), req.role());
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("{\"error\":\"" + e.getMessage() + "\"}");

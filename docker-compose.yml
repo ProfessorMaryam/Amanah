@@ -6,11 +6,15 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "8742:8742"
     environment:
       SUPABASE_DB_PASSWORD: ${SUPABASE_DB_PASSWORD}
       SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
-      CORS_ORIGINS: http://localhost:3000
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: http://localhost:4173
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID}
     restart: unless-stopped
 
   frontend:
@@ -18,11 +22,11 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
     ports:
-      - "3000:3000"
+      - "4173:4173"
     environment:
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      NEXT_PUBLIC_API_URL: http://backend:8080
+      NEXT_PUBLIC_API_URL: http://backend:8742
     depends_on:
       - backend
     restart: unless-stopped

@@ -27,16 +27,17 @@ public class UserService {
 
     // ----- Auth -----
 
-    public AuthResponse signup(String email, String password, String fullName) {
+    public AuthResponse signup(String email, String password, String fullName, String role) {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new IllegalArgumentException("Email already in use");
         }
+        User.UserRole userRole = "child".equalsIgnoreCase(role) ? User.UserRole.child : User.UserRole.parent;
         User user = User.builder()
                 .id(UUID.randomUUID())
                 .email(email)
                 .password(passwordEncoder.encode(password))
                 .fullName(fullName)
-                .role(User.UserRole.parent)
+                .role(userRole)
                 .build();
         userRepository.save(user);
         return new AuthResponse(generateToken(user), toDto(user));
