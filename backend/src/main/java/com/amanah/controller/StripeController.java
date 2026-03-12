@@ -127,6 +127,9 @@ public class StripeController {
         goal.setStripeSubscriptionId(subscriptionId);
         goalRepository.save(goal);
 
+        // Simulate first payment immediately
+        contributionService.contribute(childId, amount, Transaction.TransactionType.AUTO);
+
         return ResponseEntity.ok(Map.of("subscriptionId", subscriptionId));
     }
 

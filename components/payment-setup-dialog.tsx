@@ -30,7 +30,7 @@ interface SetupFormProps {
 function SetupForm({ childId, customerId, onSuccess, token }: SetupFormProps) {
   const stripe = useStripe()
   const elements = useElements()
-  const { setStripeSubscriptionId } = useApp()
+  const { setStripeSubscriptionId, recordAutoContribution, getChild } = useApp()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -80,6 +80,10 @@ function SetupForm({ childId, customerId, onSuccess, token }: SetupFormProps) {
 
     const { subscriptionId } = await res.json()
     setStripeSubscriptionId(childId, subscriptionId)
+    const monthlyContribution = getChild(childId)?.goal?.monthlyContribution ?? 0
+    if (monthlyContribution > 0) {
+      recordAutoContribution(childId, monthlyContribution)
+    }
     setLoading(false)
     onSuccess()
   }

@@ -132,6 +132,7 @@ interface AppContextType {
   setFutureInstructions: (childId: string, instructions: FutureInstructions) => Promise<void>
   getChild: (id: string) => Child | undefined
   setStripeSubscriptionId: (childId: string, subscriptionId: string) => void
+  recordAutoContribution: (childId: string, amount: number) => void
   totalSavings: number
   // Child user personal goals
   personalGoals: PersonalGoal[]
@@ -605,6 +606,30 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
     []
   )
 
+  const recordAutoContribution = useCallback(
+    (childId: string, amount: number) => {
+      setChildrenData((prev) =>
+        prev.map((c) =>
+          c.id === childId
+            ? {
+                ...c,
+                goal: { ...c.goal, currentAmount: c.goal.currentAmount + amount },
+                contributions: [
+                  {
+                    id: String(Date.now()),
+                    date: new Date().toISOString().split("T")[0],
+                    amount,
+                  },
+                  ...c.contributions,
+                ],
+              }
+            : c
+        )
+      )
+    },
+    []
+  )
+
   const totalSavings = childrenData.reduce(
     (sum, c) => sum + c.goal.currentAmount,
     0
@@ -701,6 +726,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
         setFutureInstructions,
         getChild,
         setStripeSubscriptionId,
+        recordAutoContribution,
         totalSavings,
         personalGoals,
         createPersonalGoal,
