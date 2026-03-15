@@ -159,7 +159,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
   }
 
   function apiUrl(path: string) {
-    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8742"
+    const base = process.env.NEXT_PUBLIC_API_URL || ""
     return `${base}${path}`
   }
 
@@ -176,7 +176,7 @@ export function AppProvider({ children: childrenNode }: { children: ReactNode })
 
     const fetchData = async () => {
       try {
-        const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8742"
+        const base = process.env.NEXT_PUBLIC_API_URL || ""
 
         const headers = {
           Authorization: `Bearer ${token}`,
