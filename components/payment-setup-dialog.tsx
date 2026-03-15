@@ -16,7 +16,7 @@ import { useApp } from "@/lib/app-context"
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 function apiUrl(path: string) {
-  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8742"
+  const base = process.env.NEXT_PUBLIC_API_URL || ""
   return `${base}${path}`
 }
 

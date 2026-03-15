@@ -21,7 +21,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8742"
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || ""
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

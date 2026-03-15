@@ -4,19 +4,23 @@ import { useState } from "react"
 import Link from "next/link"
 import { useApp } from "@/lib/app-context"
 import { useChildPet } from "@/lib/child-pet-context"
-import ChildPetSprite, {
-  PetEnvironment,
+import {
   getPetStage,
   PET_STAGE_NAMES,
   PET_STAGE_THRESHOLDS,
 } from "@/components/child-pet-sprite"
 import { STORE_ITEMS } from "@/lib/child-pet-store"
+import PetPlayArea from "@/components/pet-play-area"
+import { getActiveAddons, AddonGallery } from "@/components/pet-play-addons"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 function formatBHD(n: number) {
-  return new Intl.NumberFormat("en-BH", { style: "currency", currency: "BHD", minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(n)
+  return new Intl.NumberFormat("en-BH", {
+    style: "currency", currency: "BHD",
+    minimumFractionDigits: 3, maximumFractionDigits: 3,
+  }).format(n)
 }
 
 function happinessMood(h: number) {
@@ -74,7 +78,6 @@ export default function PetPage() {
   const { personalGoals } = useApp()
   const pet = useChildPet()
   const toast = useToast()
-  const [petAnim, setPetAnim] = useState(false)
 
   const totalSaved = personalGoals.reduce((s, g) => s + g.currentAmount, 0)
   const petStage = pet.petType ? getPetStage(totalSaved) : 1
@@ -82,54 +85,66 @@ export default function PetPage() {
   const stageName = PET_STAGE_NAMES[petStage - 1] ?? "Egg"
   const nextThreshold = PET_STAGE_THRESHOLDS[petStage]
 
-  const equippedHat    = pet.equipped.hat    ? STORE_ITEMS.find(i => i.id === pet.equipped.hat)?.emoji    ?? "" : ""
-  const equippedOutfit = pet.equipped.outfit ? STORE_ITEMS.find(i => i.id === pet.equipped.outfit)?.emoji ?? "" : ""
-  const equippedToy    = pet.equipped.toy    ? STORE_ITEMS.find(i => i.id === pet.equipped.toy)?.emoji    ?? "" : ""
+  const equippedHatEmoji    = pet.equipped.hat    ? STORE_ITEMS.find(i => i.id === pet.equipped.hat)?.emoji    : undefined
+  const equippedOutfitEmoji = pet.equipped.outfit ? STORE_ITEMS.find(i => i.id === pet.equipped.outfit)?.emoji : undefined
+  const equippedToyEmoji    = pet.equipped.toy    ? STORE_ITEMS.find(i => i.id === pet.equipped.toy)?.emoji    : undefined
+
+  // Active addons for the play area
+  const playAddons = pet.petType
+    ? getActiveAddons(petStage, { ownedItems: pet.ownedItems })
+    : []
 
   function triggerAction(fn: () => boolean, successMsg: string, cooldownMsg: string) {
-    if (fn()) {
-      toast.show(successMsg)
-      setPetAnim(true)
-      setTimeout(() => setPetAnim(false), 800)
-    } else {
-      toast.show(cooldownMsg)
-    }
+    if (fn()) toast.show(successMsg)
+    else toast.show(cooldownMsg)
+  }
+
+  function handlePetFromCanvas() {
+    triggerAction(pet.petThePet, `${pet.petName} loved your touch! 💕`, "Wait a bit before petting again!")
   }
 
   if (!pet.mounted || !pet.petType) return null
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 lg:px-8 flex flex-col gap-5">
+    <div className="mx-auto max-w-4xl px-4 py-8 lg:px-8 flex flex-col gap-5">
 
       {/* Back */}
-      <Link href="/dashboard/child-view" className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors w-fit">
+      <Link
+        href="/dashboard/child-view"
+        className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors w-fit"
+      >
         <ArrowLeft className="h-4 w-4" /> Back to Home
       </Link>
 
       <h1 className="text-2xl font-extrabold text-primary flex items-center gap-2">
-        ⭐ My Pet
+        ⭐ {pet.petName}&apos;s Room
       </h1>
 
-      {/* Environment */}
-      <PetEnvironment stage={petStage as 1|2|3|4|5}>
-        <div className="flex flex-col items-center gap-2">
-          {equippedHat && <span className="text-2xl -mb-2 z-10">{equippedHat}</span>}
-          <div
-            className={cn("relative", petAnim && "child-bounce")}
-            onClick={() => triggerAction(pet.petThePet, `${pet.petName} loved your touch! 💕`, "Wait a bit before petting again!")}
-          >
-            <ChildPetSprite petType={pet.petType} stage={petStage as 1|2|3|4|5} size={150} />
-            {equippedOutfit && <span className="absolute bottom-4 right-0 text-2xl">{equippedOutfit}</span>}
-            {equippedToy    && <span className="absolute bottom-0 left-0  text-2xl">{equippedToy}</span>}
-          </div>
-          <p className="font-extrabold text-primary text-xl">{pet.petName}</p>
-          <span className={cn("text-xs font-bold px-3 py-1 rounded-full", mood.color)}>
+      {/* ── Isometric Play Area ─────────────────────────────────────── */}
+      <div className="flex flex-col gap-1.5">
+        <PetPlayArea
+          petType={pet.petType}
+          stage={petStage}
+          petName={pet.petName}
+          happiness={pet.happiness}
+          addons={playAddons}
+          ownedItems={pet.ownedItems}
+          equippedHat={equippedHatEmoji}
+          equippedOutfit={equippedOutfitEmoji}
+          onPet={handlePetFromCanvas}
+          className="h-[520px]"
+        />
+        <div className="flex items-center justify-between px-1">
+          <p className="text-xs text-muted-foreground font-medium">
+            Click anywhere to move · Click {pet.petName} to pet 💕
+          </p>
+          <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full", mood.color)}>
             {mood.face} {mood.label}
           </span>
         </div>
-      </PetEnvironment>
+      </div>
 
-      {/* Stats row */}
+      {/* ── Stats row ───────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="border-0 shadow-sm bg-gradient-to-br from-pink-50 to-rose-50">
           <CardContent className="p-4">
@@ -146,11 +161,14 @@ export default function PetPage() {
             </div>
           </CardContent>
         </Card>
+
         <Card className="border-0 shadow-sm bg-gradient-to-br from-violet-50 to-purple-50">
           <CardContent className="p-4">
             <p className="text-xs font-bold text-muted-foreground mb-2">Stage</p>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-3xl">{petStage === 1 ? "🥚" : petStage === 2 ? "🐣" : petStage === 3 ? "🌿" : petStage === 4 ? "⚡" : "🌟"}</span>
+              <span className="text-3xl">
+                {petStage === 1 ? "🥚" : petStage === 2 ? "🐣" : petStage === 3 ? "🌿" : petStage === 4 ? "⚡" : "🌟"}
+              </span>
               <span className="text-base font-extrabold text-primary">{stageName}</span>
             </div>
             {nextThreshold
@@ -161,7 +179,19 @@ export default function PetPage() {
         </Card>
       </div>
 
-      {/* Action buttons */}
+      {/* ── Equipped accessories strip ──────────────────────────────── */}
+      {(equippedHatEmoji || equippedOutfitEmoji || equippedToyEmoji) && (
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-3 flex items-center gap-3 flex-wrap">
+            <p className="text-xs font-bold text-muted-foreground">Wearing:</p>
+            {equippedHatEmoji  && <span className="rounded-xl bg-violet-50 px-2 py-1 text-sm border border-violet-200">{equippedHatEmoji} Hat</span>}
+            {equippedOutfitEmoji && <span className="rounded-xl bg-pink-50 px-2 py-1 text-sm border border-pink-200">{equippedOutfitEmoji} Outfit</span>}
+            {equippedToyEmoji  && <span className="rounded-xl bg-amber-50 px-2 py-1 text-sm border border-amber-200">{equippedToyEmoji} Toy</span>}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Action buttons ──────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3">
         <ActionButton
           icon="🍖" label="Feed"
@@ -186,7 +216,7 @@ export default function PetPage() {
         />
       </div>
 
-      {/* Evolution Journey */}
+      {/* ── Evolution Journey ────────────────────────────────────────── */}
       <Card className="border-0 shadow-sm overflow-hidden">
         <div className="h-1.5 bg-gradient-to-r from-violet-400 via-pink-400 to-amber-400" />
         <CardContent className="p-5">
@@ -196,13 +226,13 @@ export default function PetPage() {
               const s = i + 1
               const threshold = PET_STAGE_THRESHOLDS[i]
               const isUnlocked = petStage >= s
-              const isCurrent = petStage === s
+              const isCurrent  = petStage === s
               const stageIcon = s === 1 ? "🥚" : s === 2 ? "🐣" : s === 3 ? "🌿" : s === 4 ? "⚡" : "🌟"
               return (
                 <div key={name} className="flex flex-col items-center gap-1.5 flex-1">
                   <div className={cn(
                     "flex h-10 w-10 items-center justify-center rounded-full text-xl border-2 transition-all",
-                    isCurrent  ? "border-violet-500 bg-violet-100 shadow-md scale-110"
+                    isCurrent   ? "border-violet-500 bg-violet-100 shadow-md scale-110"
                     : isUnlocked ? "border-violet-300 bg-violet-50"
                     : "border-muted bg-muted/50 opacity-40"
                   )}>
@@ -216,6 +246,20 @@ export default function PetPage() {
               )
             })}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Room Add-ons gallery ─────────────────────────────────────── */}
+      <Card className="border-0 shadow-sm overflow-hidden">
+        <div className="h-1.5 bg-gradient-to-r from-amber-400 to-orange-400" />
+        <CardContent className="p-5">
+          <AddonGallery
+            stage={petStage}
+            ownedItems={pet.ownedItems}
+          />
+          <p className="mt-3 text-xs text-muted-foreground">
+            Save more & buy toys from the store to unlock more room decorations!
+          </p>
         </CardContent>
       </Card>
 

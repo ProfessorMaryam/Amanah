@@ -5,28 +5,39 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8742:8742"
+    container_name: amanah-backend
     environment:
       SUPABASE_DB_PASSWORD: ${SUPABASE_DB_PASSWORD}
       SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
       JWT_SECRET: ${JWT_SECRET}
-      CORS_ORIGINS: http://localhost:4173
+      CORS_ORIGINS: ${CORS_ORIGINS}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       STRIPE_PRICE_ID: ${STRIPE_PRICE_ID}
+    expose:
+      - "8742"
+    networks:
+      - amanah-network
     restart: unless-stopped
 
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+    container_name: amanah-frontend
     ports:
       - "4173:4173"
     environment:
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      NEXT_PUBLIC_API_URL: http://backend:8742
+      NEXT_PUBLIC_API_URL: ""
+      BACKEND_URL: http://amanah-backend:8742
     depends_on:
       - backend
+    networks:
+      - amanah-network
     restart: unless-stopped
+
+networks:
+  amanah-network:
+    driver: bridge

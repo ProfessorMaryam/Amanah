@@ -6,6 +6,9 @@ import { useApp } from "@/lib/app-context"
 import { useChildPet } from "@/lib/child-pet-context"
 import { getPetStage, PET_STAGE_NAMES, PET_STAGE_THRESHOLDS, type ChildPetType } from "@/components/child-pet-sprite"
 import ChildPetSprite from "@/components/child-pet-sprite"
+import PetPlayArea from "@/components/pet-play-area"
+import { getActiveAddons } from "@/components/pet-play-addons"
+import { STORE_ITEMS } from "@/lib/child-pet-store"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -215,54 +218,51 @@ export default function ChildViewPage() {
 
       {/* ── Section cards ── */}
 
-      {/* My Pet */}
-      <Link href="/dashboard/child-view/pet">
-        <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 cursor-pointer overflow-hidden border-2 border-transparent hover:border-violet-300">
-          <div className="h-1.5 bg-gradient-to-r from-violet-400 to-purple-500" />
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="shrink-0">
-                <ChildPetSprite petType={pet.petType!} stage={petStage as 1|2|3|4|5} size={72} animate />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <Star className="h-4 w-4 text-amber-500" />
-                  <p className="font-extrabold text-primary">My Pet</p>
-                  <span className="ml-auto text-xs font-bold text-violet-600 bg-violet-100 rounded-full px-2 py-0.5">
-                    {PET_STAGE_NAMES[petStage - 1]}
-                  </span>
-                </div>
-                <p className="text-sm font-semibold text-amanah-plum truncate">{pet.petName}</p>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-base">{mood.face}</span>
-                  <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${pet.happiness}%`,
-                        background: pet.happiness >= 60 ? "linear-gradient(90deg,#34d399,#10b981)"
-                          : pet.happiness >= 30 ? "linear-gradient(90deg,#fbbf24,#f59e0b)"
-                          : "linear-gradient(90deg,#f87171,#ef4444)",
-                      }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground shrink-0">{mood.label}</span>
-                </div>
-                {petNextThreshold && (
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground shrink-0">Stage</span>
-                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full rounded-full bg-gradient-to-r from-violet-400 to-purple-500 transition-all" style={{ width: `${petStagePct}%` }} />
-                    </div>
-                    <span className="text-xs font-bold text-violet-600">{petStagePct}%</span>
-                  </div>
-                )}
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+      {/* My Pet — live isometric play area preview */}
+      <Card className="border-0 shadow-md overflow-hidden border-2 border-transparent hover:border-violet-300 transition-all duration-200">
+        <div className="h-1.5 bg-gradient-to-r from-violet-400 to-purple-500" />
+        <CardContent className="p-0">
+          {/* Live mini play area */}
+          <PetPlayArea
+            petType={pet.petType!}
+            stage={petStage as 1|2|3|4|5}
+            petName={pet.petName}
+            happiness={pet.happiness}
+            addons={getActiveAddons(petStage as 1|2|3|4|5, { ownedItems: pet.ownedItems })}
+            ownedItems={pet.ownedItems}
+            equippedHat={pet.equipped.hat ? STORE_ITEMS.find(i => i.id === pet.equipped.hat)?.emoji : undefined}
+            equippedOutfit={pet.equipped.outfit ? STORE_ITEMS.find(i => i.id === pet.equipped.outfit)?.emoji : undefined}
+            className="h-80 rounded-none border-0"
+          />
+          {/* Footer bar with stats */}
+          <div className="px-4 py-3 flex items-center gap-3 bg-white/80">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <Star className="h-4 w-4 text-amber-500 shrink-0" />
+              <p className="font-extrabold text-primary truncate">{pet.petName}</p>
+              <span className="text-xs font-bold text-violet-600 bg-violet-100 rounded-full px-2 py-0.5 shrink-0">
+                {PET_STAGE_NAMES[petStage - 1]}
+              </span>
             </div>
-          </CardContent>
-        </Card>
-      </Link>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-base">{mood.face}</span>
+              <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${pet.happiness}%`,
+                    background: pet.happiness >= 60 ? "linear-gradient(90deg,#34d399,#10b981)"
+                      : pet.happiness >= 30 ? "linear-gradient(90deg,#fbbf24,#f59e0b)"
+                      : "linear-gradient(90deg,#f87171,#ef4444)",
+                  }}
+                />
+              </div>
+            </div>
+            <Link href="/dashboard/child-view/pet" className="shrink-0">
+              <ChevronRight className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* My Goals */}
       <Link href="/dashboard/child-view/goals">
