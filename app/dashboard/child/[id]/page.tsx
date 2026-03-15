@@ -297,7 +297,7 @@ export default function ChildDetailPage({
               </div>
               <div className="flex flex-1 flex-col gap-1.5">
                 <Label className="text-sm font-medium text-amanah-plum">Target Date</Label>
-                <Input type="date" value={editTargetDate} onChange={(e) => setEditTargetDate(e.target.value)} className="bg-amanah-cream" required />
+                <Input type="date" value={editTargetDate} onChange={(e) => setEditTargetDate(e.target.value)} min={new Date(Date.now() + 86400000).toISOString().split("T")[0]} className="bg-amanah-cream" required />
               </div>
             </div>
             <DialogFooter className="gap-2 pt-2">

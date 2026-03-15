@@ -21,23 +21,30 @@ export default function AddChildPage() {
   const [targetAmount, setTargetAmount] = useState("")
   const [targetDate, setTargetDate] = useState("")
   const [monthlyContribution, setMonthlyContribution] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    await addChild({
-      id: "",
-      name: childName,
-      dateOfBirth,
-      goal: {
-        name: goalName || "Savings Goal",
-        targetAmount: parseFloat(targetAmount) || 10000,
-        currentAmount: 0,
-        monthlyContribution: parseFloat(monthlyContribution) || 0,
-        startDate: new Date().toISOString().split("T")[0],
-        targetDate: targetDate || "2035-01-01",
-      },
-    })
-    router.push("/dashboard")
+    if (isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      await addChild({
+        id: "",
+        name: childName,
+        dateOfBirth,
+        goal: {
+          name: goalName || "Savings Goal",
+          targetAmount: parseFloat(targetAmount) || 10000,
+          currentAmount: 0,
+          monthlyContribution: parseFloat(monthlyContribution) || 0,
+          startDate: new Date().toISOString().split("T")[0],
+          targetDate: targetDate || "2035-01-01",
+        },
+      })
+      router.push("/dashboard")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -157,6 +164,7 @@ export default function AddChildPage() {
                   type="date"
                   value={targetDate}
                   onChange={(e) => setTargetDate(e.target.value)}
+                  min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
                   className="h-12 text-base bg-amanah-cream border-input"
                   required
                 />
@@ -175,9 +183,10 @@ export default function AddChildPage() {
                 </Link>
                 <Button
                   type="submit"
+                  disabled={isSubmitting}
                   className="h-12 text-base font-semibold sm:order-2 sm:px-8"
                 >
-                  Save Child
+                  {isSubmitting ? "Saving..." : "Save Child"}
                 </Button>
               </div>
             </form>
