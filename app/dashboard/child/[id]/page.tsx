@@ -66,6 +66,7 @@ export default function ChildDetailPage({
   const [editGoalName, setEditGoalName] = useState("")
   const [editTargetAmount, setEditTargetAmount] = useState("")
   const [editTargetDate, setEditTargetDate] = useState("")
+  const [editDateError, setEditDateError] = useState("")
 
   const child = getChild(id)
 
@@ -110,11 +111,27 @@ export default function ChildDetailPage({
     setEditGoalName(child!.goal.name)
     setEditTargetAmount(String(child!.goal.targetAmount))
     setEditTargetDate(child!.goal.targetDate)
+    setEditDateError("")
     setShowEditDialog(true)
   }
 
   function handleEdit(e: React.FormEvent) {
     e.preventDefault()
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const targetDate = new Date(editTargetDate)
+    targetDate.setHours(0, 0, 0, 0)
+    const dob = new Date(editDob)
+    dob.setHours(0, 0, 0, 0)
+    if (targetDate <= today) {
+      setEditDateError("Target date must be in the future.")
+      return
+    }
+    if (dob > today) {
+      setEditDateError("Date of birth cannot be in the future.")
+      return
+    }
+    setEditDateError("")
     updateChild(child!.id, {
       name: editName,
       dateOfBirth: editDob,
@@ -278,13 +295,16 @@ export default function ChildDetailPage({
             <DialogTitle className="text-primary">Edit {child.name}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit} className="flex flex-col gap-4 pt-2">
+            {editDateError && (
+              <p className="text-sm font-medium text-destructive">{editDateError}</p>
+            )}
             <div className="flex flex-col gap-1.5">
               <Label className="text-sm font-medium text-amanah-plum">Child Name</Label>
               <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="bg-amanah-cream" required />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-sm font-medium text-amanah-plum">Date of Birth</Label>
-              <Input type="date" value={editDob} onChange={(e) => setEditDob(e.target.value)} className="bg-amanah-cream" required />
+              <Input type="date" value={editDob} onChange={(e) => setEditDob(e.target.value)} max={new Date().toISOString().split("T")[0]} className="bg-amanah-cream" required />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-sm font-medium text-amanah-plum">Goal Name</Label>

@@ -1,20 +1,20 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
+import { useState } from "react";
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,12 +24,21 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Eye, Plus, X, Pencil, Trash2, PauseCircle, PlayCircle, CreditCard } from "lucide-react"
-import { useApp } from "@/lib/app-context"
-import type { Child } from "@/lib/types"
-import { cn } from "@/lib/utils"
-import { PaymentSetupDialog } from "@/components/payment-setup-dialog"
+} from "@/components/ui/alert-dialog";
+import {
+  Eye,
+  Plus,
+  X,
+  Pencil,
+  Trash2,
+  PauseCircle,
+  PlayCircle,
+  CreditCard,
+} from "lucide-react";
+import { useApp } from "@/lib/app-context";
+import type { Child } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { PaymentSetupDialog } from "@/components/payment-setup-dialog";
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-BH", {
@@ -37,59 +46,64 @@ function formatCurrency(amount: number) {
     currency: "BHD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount)
+  }).format(amount);
 }
 
 function getMonthsRemaining(targetDate: string) {
-  const now = new Date()
-  const target = new Date(targetDate)
-  const diff = (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth())
-  return Math.max(0, diff)
+  const now = new Date();
+  const target = new Date(targetDate);
+  const diff =
+    (target.getFullYear() - now.getFullYear()) * 12 +
+    (target.getMonth() - now.getMonth());
+  return Math.max(0, diff);
 }
 
 export function ChildCard({ child }: { child: Child }) {
-  const { addContribution, updateChild, deleteChild, togglePausedGoal } = useApp()
-  const [showForm, setShowForm] = useState(false)
-  const [amount, setAmount] = useState("")
-  const [showEditDialog, setShowEditDialog] = useState(false)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false)
+  const { addContribution, updateChild, deleteChild, togglePausedGoal } =
+    useApp();
+  const [showForm, setShowForm] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   // Edit form state
-  const [editName, setEditName] = useState(child.name)
-  const [editDob, setEditDob] = useState(child.dateOfBirth)
-  const [editGoalName, setEditGoalName] = useState(child.goal.name)
-  const [editTargetAmount, setEditTargetAmount] = useState(String(child.goal.targetAmount))
-  const [editTargetDate, setEditTargetDate] = useState(child.goal.targetDate)
+  const [editName, setEditName] = useState(child.name);
+  const [editDob, setEditDob] = useState(child.dateOfBirth);
+  const [editGoalName, setEditGoalName] = useState(child.goal.name);
+  const [editTargetAmount, setEditTargetAmount] = useState(
+    String(child.goal.targetAmount),
+  );
+  const [editTargetDate, setEditTargetDate] = useState(child.goal.targetDate);
 
   const percentage = Math.min(
     100,
-    Math.round((child.goal.currentAmount / child.goal.targetAmount) * 100)
-  )
-  const monthsLeft = getMonthsRemaining(child.goal.targetDate)
-  const isPaused = child.goal.paused ?? false
+    Math.round((child.goal.currentAmount / child.goal.targetAmount) * 100),
+  );
+  const monthsLeft = getMonthsRemaining(child.goal.targetDate);
+  const isPaused = child.goal.paused ?? false;
 
   const accentColor =
     percentage >= 75
       ? "border-l-accent"
       : percentage >= 40
-      ? "border-l-yellow-400"
-      : "border-l-amanah-peach"
+        ? "border-l-yellow-400"
+        : "border-l-amanah-peach";
 
   function handleContribute(e: React.FormEvent) {
-    e.preventDefault()
-    const num = parseFloat(amount)
+    e.preventDefault();
+    const num = parseFloat(amount);
     if (num > 0) {
-      addContribution(child.id, num, "Quick contribution")
-      setAmount("")
-      setShowForm(false)
+      addContribution(child.id, num, "Quick contribution");
+      setAmount("");
+      setShowForm(false);
     }
   }
 
   function handleEdit(e: React.FormEvent) {
-    e.preventDefault()
-    const parsedAmount = parseFloat(editTargetAmount)
-    if (isNaN(parsedAmount) || parsedAmount <= 0) return
+    e.preventDefault();
+    const parsedAmount = parseFloat(editTargetAmount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return;
     updateChild(child.id, {
       name: editName,
       dateOfBirth: editDob,
@@ -98,17 +112,17 @@ export function ChildCard({ child }: { child: Child }) {
         targetAmount: parsedAmount,
         targetDate: editTargetDate,
       },
-    })
-    setShowEditDialog(false)
+    });
+    setShowEditDialog(false);
   }
 
   function openEdit() {
-    setEditName(child.name)
-    setEditDob(child.dateOfBirth)
-    setEditGoalName(child.goal.name)
-    setEditTargetAmount(String(child.goal.targetAmount))
-    setEditTargetDate(child.goal.targetDate)
-    setShowEditDialog(true)
+    setEditName(child.name);
+    setEditDob(child.dateOfBirth);
+    setEditGoalName(child.goal.name);
+    setEditTargetAmount(String(child.goal.targetAmount));
+    setEditTargetDate(child.goal.targetDate);
+    setShowEditDialog(true);
   }
 
   return (
@@ -116,7 +130,7 @@ export function ChildCard({ child }: { child: Child }) {
       <Card
         className={cn(
           "border-0 border-l-4 bg-card shadow-lg transition-shadow duration-200 hover:shadow-xl",
-          accentColor
+          accentColor,
         )}
       >
         <CardContent className="flex flex-col gap-4 p-6">
@@ -124,14 +138,21 @@ export function ChildCard({ child }: { child: Child }) {
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="text-xl font-bold text-primary truncate">{child.name}</h3>
+                <h3 className="text-xl font-bold text-primary truncate">
+                  {child.name}
+                </h3>
                 {isPaused && (
-                  <Badge variant="outline" className="shrink-0 border-yellow-400 text-yellow-600 text-xs">
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 border-yellow-400 text-yellow-600 text-xs"
+                  >
                     Paused
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-amanah-sage truncate">{child.goal.name}</p>
+              <p className="text-sm text-amanah-sage truncate">
+                {child.goal.name}
+              </p>
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <Button
@@ -173,7 +194,10 @@ export function ChildCard({ child }: { child: Child }) {
 
           {/* Progress bar */}
           <div className="flex flex-col gap-1.5">
-            <Progress value={percentage} className="h-3 rounded-full bg-amanah-peach [&>div]:bg-accent [&>div]:rounded-full" />
+            <Progress
+              value={percentage}
+              className="h-3 rounded-full bg-amanah-peach [&>div]:bg-accent [&>div]:rounded-full"
+            />
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-accent-foreground">
                 {percentage}% complete
@@ -186,9 +210,15 @@ export function ChildCard({ child }: { child: Child }) {
 
           {/* Add contribution form */}
           {showForm && (
-            <form onSubmit={handleContribute} className="flex flex-col gap-3 rounded-xl bg-amanah-cream p-4">
+            <form
+              onSubmit={handleContribute}
+              className="flex flex-col gap-3 rounded-xl bg-amanah-cream p-4"
+            >
               <div className="flex items-center justify-between">
-                <Label htmlFor={`amount-${child.id}`} className="text-sm font-medium text-amanah-plum">
+                <Label
+                  htmlFor={`amount-${child.id}`}
+                  className="text-sm font-medium text-amanah-plum"
+                >
                   Contribution Amount (BHD)
                 </Label>
                 <button
@@ -212,7 +242,10 @@ export function ChildCard({ child }: { child: Child }) {
                   className="h-10 flex-1 bg-card text-sm"
                   required
                 />
-                <Button type="submit" className="h-10 px-4 text-sm font-semibold">
+                <Button
+                  type="submit"
+                  className="h-10 px-4 text-sm font-semibold"
+                >
                   Add
                 </Button>
               </div>
@@ -248,12 +281,18 @@ export function ChildCard({ child }: { child: Child }) {
                 "h-10 w-10 shrink-0",
                 isPaused
                   ? "text-yellow-600 hover:bg-yellow-50"
-                  : "text-amanah-sage hover:text-primary"
+                  : "text-amanah-sage hover:text-primary",
               )}
               onClick={() => togglePausedGoal(child.id)}
-              aria-label={isPaused ? "Resume contributions" : "Pause contributions"}
+              aria-label={
+                isPaused ? "Resume contributions" : "Pause contributions"
+              }
             >
-              {isPaused ? <PlayCircle className="h-5 w-5" /> : <PauseCircle className="h-5 w-5" />}
+              {isPaused ? (
+                <PlayCircle className="h-5 w-5" />
+              ) : (
+                <PauseCircle className="h-5 w-5" />
+              )}
             </Button>
             {!showForm && (
               <Button
@@ -272,11 +311,15 @@ export function ChildCard({ child }: { child: Child }) {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="bg-background sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-primary">Edit {child.name}</DialogTitle>
+            <DialogTitle className="text-primary">
+              Edit {child.name}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit} className="flex flex-col gap-4 pt-2">
             <div className="flex flex-col gap-1.5">
-              <Label className="text-sm font-medium text-amanah-plum">Child Name</Label>
+              <Label className="text-sm font-medium text-amanah-plum">
+                Child Name
+              </Label>
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
@@ -285,7 +328,9 @@ export function ChildCard({ child }: { child: Child }) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-sm font-medium text-amanah-plum">Date of Birth</Label>
+              <Label className="text-sm font-medium text-amanah-plum">
+                Date of Birth
+              </Label>
               <Input
                 type="date"
                 value={editDob}
@@ -295,7 +340,9 @@ export function ChildCard({ child }: { child: Child }) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-sm font-medium text-amanah-plum">Goal Name</Label>
+              <Label className="text-sm font-medium text-amanah-plum">
+                Goal Name
+              </Label>
               <Input
                 value={editGoalName}
                 onChange={(e) => setEditGoalName(e.target.value)}
@@ -305,7 +352,9 @@ export function ChildCard({ child }: { child: Child }) {
             </div>
             <div className="flex gap-3">
               <div className="flex flex-1 flex-col gap-1.5">
-                <Label className="text-sm font-medium text-amanah-plum">Target Amount (BHD)</Label>
+                <Label className="text-sm font-medium text-amanah-plum">
+                  Target Amount (BHD)
+                </Label>
                 <Input
                   type="number"
                   min="100"
@@ -316,18 +365,27 @@ export function ChildCard({ child }: { child: Child }) {
                 />
               </div>
               <div className="flex flex-1 flex-col gap-1.5">
-                <Label className="text-sm font-medium text-amanah-plum">Target Date</Label>
+                <Label className="text-sm font-medium text-amanah-plum">
+                  Target Date
+                </Label>
                 <Input
                   type="date"
                   value={editTargetDate}
                   onChange={(e) => setEditTargetDate(e.target.value)}
+                  min={
+                    new Date(Date.now() + 86400000).toISOString().split("T")[0]
+                  }
                   className="bg-amanah-cream"
                   required
                 />
               </div>
             </div>
             <DialogFooter className="gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowEditDialog(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit">Save Changes</Button>
@@ -347,9 +405,12 @@ export function ChildCard({ child }: { child: Child }) {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="bg-background">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-primary">Delete {child.name}?</AlertDialogTitle>
+            <AlertDialogTitle className="text-primary">
+              Delete {child.name}?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove {child.name}&apos;s profile and all savings history. This cannot be undone.
+              This will permanently remove {child.name}&apos;s profile and all
+              savings history. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -364,5 +425,5 @@ export function ChildCard({ child }: { child: Child }) {
         </AlertDialogContent>
       </AlertDialog>
     </>
-  )
+  );
 }

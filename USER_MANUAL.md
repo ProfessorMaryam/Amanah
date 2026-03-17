@@ -220,7 +220,28 @@ Feed, play, and pet actions use cooldowns. Wait briefly and try again.
 
 The child pet system is stored in the browser on the current device. For best results, keep using the same browser/device.
 
-## 6. Quick summary
+## 6. Test payment cards
+
+Use these card numbers when testing payments in a development or staging environment. Use any future expiry date, any 3-digit CVC, and any billing postcode.
+
+### Successful payments
+
+| Card Number | Brand |
+|---|---|
+| 4242 4242 4242 4242 | Visa |
+| 5555 5555 5555 4444 | Mastercard |
+| 3782 822463 10005 | Amex |
+
+### Decline scenarios
+
+| Card Number | Reason |
+|---|---|
+| 4000 0000 0000 0002 | Generic decline |
+| 4000 0000 0000 9995 | Insufficient funds |
+| 4000 0000 0000 0069 | Expired card |
+| 4000 0000 0000 0127 | Incorrect CVC |
+
+## 7. Quick summary
 
 - Parents manage children, goals, and contributions.
 - Children manage personal goals and interact with a virtual pet.
