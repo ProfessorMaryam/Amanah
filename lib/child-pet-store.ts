@@ -44,7 +44,8 @@ export interface ChildPetState {
   lastFed: number            // timestamp ms
   lastPlayed: number         // timestamp ms
   lastPetted: number         // timestamp ms
-  coins: number              // earned from savings
+  coins: number              // current spendable balance
+  coinsSpent: number         // lifetime coins spent on items
   ownedItems: string[]       // item ids
   equipped: Record<AccessorySlot, string | null>
   setupDone: boolean
@@ -58,6 +59,7 @@ const DEFAULT_STATE: ChildPetState = {
   lastPlayed: 0,
   lastPetted: 0,
   coins: 0,
+  coinsSpent: 0,
   ownedItems: [],
   equipped: { hat: null, outfit: null, toy: null },
   setupDone: false,
@@ -98,21 +100,22 @@ export function useChildPetStore(totalSavedBHD: number) {
     const decayMins = Math.floor((Date.now() - stored.lastPetted) / HAPPINESS_DECAY_MS)
     const decayed = Math.max(0, stored.happiness - decayMins)
 
-    // Sync coins from savings: 1 coin per 0.01 BHD saved
-    const earnedCoins = Math.floor(totalSavedBHD * 100)
-    const coins = Math.max(stored.coins, earnedCoins)
+    // 5 coins per 1 BHD saved. Deduct lifetime spent so deleting a goal correctly reduces balance.
+    const earned = Math.floor(totalSavedBHD * 5)
+    const coins = Math.max(0, earned - (stored.coinsSpent ?? 0))
 
     setState({ ...stored, happiness: decayed, coins })
     setMounted(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Sync coins whenever totalSavedBHD changes
+  // Sync coins whenever totalSavedBHD changes (goal added, deleted, or contributed to)
   useEffect(() => {
     if (!mounted) return
-    const earnedCoins = Math.floor(totalSavedBHD * 100)
+    const earned = Math.floor(totalSavedBHD * 5)
     setState((prev) => {
-      const next = { ...prev, coins: Math.max(prev.coins, earnedCoins) }
+      const coins = Math.max(0, earned - (prev.coinsSpent ?? 0))
+      const next = { ...prev, coins }
       save(next)
       return next
     })
@@ -154,6 +157,7 @@ export function useChildPetStore(totalSavedBHD: number) {
     if (state.coins < item.cost) return false
     update({
       coins: state.coins - item.cost,
+      coinsSpent: (state.coinsSpent ?? 0) + item.cost,
       ownedItems: [...state.ownedItems, itemId],
     })
     return true

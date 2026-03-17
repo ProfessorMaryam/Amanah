@@ -85,6 +85,8 @@ export default function PetPage() {
   const stageName = PET_STAGE_NAMES[petStage - 1] ?? "Egg"
   const nextThreshold = PET_STAGE_THRESHOLDS[petStage]
 
+  const equippedHatId       = pet.equipped.hat    ?? undefined
+  const equippedOutfitId    = pet.equipped.outfit ?? undefined
   const equippedHatEmoji    = pet.equipped.hat    ? STORE_ITEMS.find(i => i.id === pet.equipped.hat)?.emoji    : undefined
   const equippedOutfitEmoji = pet.equipped.outfit ? STORE_ITEMS.find(i => i.id === pet.equipped.outfit)?.emoji : undefined
   const equippedToyEmoji    = pet.equipped.toy    ? STORE_ITEMS.find(i => i.id === pet.equipped.toy)?.emoji    : undefined
@@ -129,8 +131,8 @@ export default function PetPage() {
           happiness={pet.happiness}
           addons={playAddons}
           ownedItems={pet.ownedItems}
-          equippedHat={equippedHatEmoji}
-          equippedOutfit={equippedOutfitEmoji}
+          equippedHat={equippedHatId}
+          equippedOutfit={equippedOutfitId}
           onPet={handlePetFromCanvas}
           className="h-[520px]"
         />

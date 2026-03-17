@@ -644,17 +644,242 @@ const PET_PALETTE: Record<ChildPetType, { body: string; accent: string; eye: str
   dog:    { body: "#FEF9C3", accent: "#FBBF24", eye: "#78350F", cheek: "#FCA5A5" },
 }
 
+function drawHat(ctx: CanvasRenderingContext2D, hatId: string, ax: number, baseY: number, sc: number) {
+  // Head centre is at baseY-14*sc, radius 12*sc → top of head at baseY-(14+12)*sc = baseY-26*sc
+  const hx = ax, hy = baseY - 26 * sc
+
+  if (hatId === "crown") {
+    // Gold crown sits right on top of head — hy is the top of the head
+    ctx.fillStyle = "#FBBF24"
+    ctx.beginPath()
+    ctx.moveTo(hx - 9 * sc, hy + 8 * sc)   // bottom-left
+    ctx.lineTo(hx - 9 * sc, hy + 2 * sc)   // left wall up
+    ctx.lineTo(hx - 5 * sc, hy + 5 * sc)   // left notch
+    ctx.lineTo(hx,           hy)            // centre peak
+    ctx.lineTo(hx + 5 * sc, hy + 5 * sc)   // right notch
+    ctx.lineTo(hx + 9 * sc, hy + 2 * sc)   // right wall up
+    ctx.lineTo(hx + 9 * sc, hy + 8 * sc)   // bottom-right
+    ctx.closePath()
+    ctx.fill()
+    ctx.strokeStyle = "#D97706"; ctx.lineWidth = 0.9; ctx.stroke()
+    // Band across bottom
+    ctx.fillStyle = "#D97706"
+    ctx.fillRect(hx - 9 * sc, hy + 6 * sc, 18 * sc, 2.5 * sc)
+    // Gems
+    const gems = ["#EF4444", "#3B82F6", "#10B981"]
+    for (let i = 0; i < 3; i++) {
+      ctx.fillStyle = gems[i]
+      ctx.beginPath()
+      ctx.arc(hx + (i - 1) * 5 * sc, hy + 7 * sc, 1.5 * sc, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+  } else if (hatId === "wizard-hat") {
+    // Brim sits at hy (top of head), cone rises above
+    ctx.fillStyle = "#7C3AED"
+    ctx.beginPath()
+    ctx.moveTo(hx, hy - 14 * sc)           // tip
+    ctx.lineTo(hx - 11 * sc, hy + 3 * sc)  // brim left
+    ctx.lineTo(hx + 11 * sc, hy + 3 * sc)  // brim right
+    ctx.closePath()
+    ctx.fill()
+    ctx.strokeStyle = "#5B21B6"; ctx.lineWidth = 0.8; ctx.stroke()
+    // Brim ellipse
+    ctx.fillStyle = "#6D28D9"
+    ctx.beginPath()
+    ctx.ellipse(hx, hy + 3 * sc, 13 * sc, 3.5 * sc, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.strokeStyle = "#5B21B6"; ctx.lineWidth = 0.7; ctx.stroke()
+    // Stars
+    ctx.fillStyle = "#FCD34D"
+    for (const [dx, dy] of [[-4, -4], [3, -9]]) {
+      ctx.beginPath()
+      ctx.arc(hx + dx * sc, hy + dy * sc, 1.4 * sc, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+  } else if (hatId === "party-hat") {
+    // Cone base rests at hy
+    ctx.fillStyle = "#F472B6"
+    ctx.beginPath()
+    ctx.moveTo(hx, hy - 13 * sc)
+    ctx.lineTo(hx - 9 * sc, hy + 3 * sc)
+    ctx.lineTo(hx + 9 * sc, hy + 3 * sc)
+    ctx.closePath()
+    ctx.fill()
+    ctx.strokeStyle = "#DB2777"; ctx.lineWidth = 0.8; ctx.stroke()
+    // Diagonal stripes
+    ctx.strokeStyle = "#FCD34D"; ctx.lineWidth = 1.2
+    ctx.beginPath(); ctx.moveTo(hx - 2 * sc, hy - 10 * sc); ctx.lineTo(hx - 7 * sc, hy + 2 * sc); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(hx + 2 * sc, hy - 10 * sc); ctx.lineTo(hx + 7 * sc, hy + 2 * sc); ctx.stroke()
+    // Pom-pom
+    ctx.fillStyle = "#FCD34D"
+    ctx.beginPath(); ctx.arc(hx, hy - 14 * sc, 2.8 * sc, 0, Math.PI * 2); ctx.fill()
+    // Base ellipse
+    ctx.fillStyle = "#DB2777"; ctx.globalAlpha = 0.4
+    ctx.beginPath(); ctx.ellipse(hx, hy + 3 * sc, 9 * sc, 2 * sc, 0, 0, Math.PI * 2); ctx.fill()
+    ctx.globalAlpha = 1
+
+  } else if (hatId === "cowboy") {
+    // Crown of hat sits from hy to hy+8, brim at hy+4
+    ctx.fillStyle = "#92400E"
+    // Crown (upper part)
+    ctx.beginPath()
+    ctx.ellipse(hx, hy + 4 * sc, 8 * sc, 5 * sc, 0, 0, Math.PI * 2)
+    ctx.fill()
+    // Brim
+    ctx.beginPath()
+    ctx.ellipse(hx, hy + 6 * sc, 15 * sc, 3.5 * sc, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.strokeStyle = "#78350F"; ctx.lineWidth = 0.8
+    ctx.beginPath(); ctx.ellipse(hx, hy + 6 * sc, 15 * sc, 3.5 * sc, 0, 0, Math.PI * 2); ctx.stroke()
+    ctx.beginPath(); ctx.ellipse(hx, hy + 4 * sc, 8 * sc, 5 * sc, 0, 0, Math.PI * 2); ctx.stroke()
+    // Hat band
+    ctx.strokeStyle = "#D97706"; ctx.lineWidth = 1.8
+    ctx.beginPath(); ctx.ellipse(hx, hy + 6.5 * sc, 8 * sc, 2 * sc, 0, Math.PI * 0.05, Math.PI * 0.95); ctx.stroke()
+
+  } else if (hatId === "flower") {
+    // Flower crown ring sits at hy+4 (just above head top)
+    const fy = hy + 4 * sc
+    const petals = 7
+    for (let i = 0; i < petals; i++) {
+      const a = (i / petals) * Math.PI * 2
+      const px = hx + Math.cos(a) * 7 * sc
+      const py = fy + Math.sin(a) * 3.5 * sc
+      ctx.fillStyle = i % 2 === 0 ? "#F9A8D4" : "#FCA5A5"
+      ctx.beginPath(); ctx.ellipse(px, py, 3.5 * sc, 2.5 * sc, a, 0, Math.PI * 2); ctx.fill()
+    }
+    ctx.fillStyle = "#FDE68A"
+    ctx.beginPath(); ctx.arc(hx, fy, 4 * sc, 0, Math.PI * 2); ctx.fill()
+    // Green stem ring
+    ctx.strokeStyle = "#86EFAC"; ctx.lineWidth = 2
+    ctx.beginPath(); ctx.arc(hx, fy, 8 * sc, Math.PI * 0.1, Math.PI * 0.9); ctx.stroke()
+  }
+}
+
+function drawOutfit(ctx: CanvasRenderingContext2D, outfitId: string, ax: number, baseY: number, sc: number) {
+  // Body spans baseY-7 (top) to baseY+9*sc (bottom), neck at ~baseY-7
+  const ox = ax
+  // neck Y (where collar/clasp sit)
+  const neckY = baseY - 7
+  // body bottom
+  const bodyBot = baseY + 9 * sc
+
+  if (outfitId === "cape") {
+    // Cape hangs from shoulders behind the body — drawn BEFORE body so body covers top
+    ctx.fillStyle = "#DC2626"
+    ctx.beginPath()
+    // Shoulder anchors
+    ctx.moveTo(ox - 9 * sc, neckY)
+    ctx.quadraticCurveTo(ox - 16 * sc, neckY + 6 * sc, ox - 13 * sc, bodyBot + 10 * sc)
+    ctx.lineTo(ox + 13 * sc, bodyBot + 10 * sc)
+    ctx.quadraticCurveTo(ox + 16 * sc, neckY + 6 * sc, ox + 9 * sc, neckY)
+    ctx.closePath()
+    ctx.fill()
+    // Inner highlight / fold line
+    ctx.strokeStyle = "#FCA5A5"; ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(ox, neckY)
+    ctx.quadraticCurveTo(ox + 3 * sc, neckY + 8 * sc, ox - 1 * sc, bodyBot + 10 * sc)
+    ctx.stroke()
+    // Gold clasp at collar
+    ctx.fillStyle = "#FCD34D"
+    ctx.beginPath(); ctx.arc(ox, neckY + 1 * sc, 2.5 * sc, 0, Math.PI * 2); ctx.fill()
+    ctx.strokeStyle = "#D97706"; ctx.lineWidth = 0.8; ctx.stroke()
+
+  } else if (outfitId === "scarf") {
+    // Scarf wraps around neck — drawn ON TOP of body so it looks worn
+    const sy = neckY + 4 * sc
+    // Main wrap
+    ctx.strokeStyle = "#60A5FA"; ctx.lineWidth = 5 * sc; ctx.lineCap = "round"
+    ctx.beginPath()
+    ctx.ellipse(ox, sy, 9 * sc, 3 * sc, 0, Math.PI * 1.15, Math.PI * 1.85)
+    ctx.stroke()
+    // Second loop below
+    ctx.lineWidth = 4.5 * sc
+    ctx.beginPath()
+    ctx.ellipse(ox, sy + 2 * sc, 9 * sc, 3 * sc, 0, Math.PI * 0.1, Math.PI * 0.9)
+    ctx.stroke()
+    // Dangling tail
+    ctx.lineWidth = 4 * sc
+    ctx.beginPath()
+    ctx.moveTo(ox + 8 * sc, sy + 3 * sc)
+    ctx.quadraticCurveTo(ox + 11 * sc, sy + 8 * sc, ox + 8 * sc, bodyBot + 4 * sc)
+    ctx.stroke()
+    ctx.lineCap = "butt"
+    // Stripe detail
+    ctx.strokeStyle = "#BFDBFE"; ctx.lineWidth = 1.5
+    ctx.beginPath()
+    ctx.ellipse(ox, sy, 9 * sc, 3 * sc, 0, Math.PI * 1.2, Math.PI * 1.8)
+    ctx.stroke()
+
+  } else if (outfitId === "bow-tie") {
+    // Bow tie at neck — ON TOP of body
+    const by2 = neckY + 3 * sc
+    ctx.fillStyle = "#EC4899"
+    // Left wing
+    ctx.beginPath()
+    ctx.moveTo(ox - 1.5 * sc, by2 - 1 * sc)
+    ctx.lineTo(ox - 10 * sc,  by2 - 5 * sc)
+    ctx.lineTo(ox - 10 * sc,  by2 + 3 * sc)
+    ctx.closePath(); ctx.fill()
+    ctx.strokeStyle = "#BE185D"; ctx.lineWidth = 0.7; ctx.stroke()
+    // Right wing
+    ctx.fillStyle = "#EC4899"
+    ctx.beginPath()
+    ctx.moveTo(ox + 1.5 * sc, by2 - 1 * sc)
+    ctx.lineTo(ox + 10 * sc,  by2 - 5 * sc)
+    ctx.lineTo(ox + 10 * sc,  by2 + 3 * sc)
+    ctx.closePath(); ctx.fill()
+    ctx.strokeStyle = "#BE185D"; ctx.lineWidth = 0.7; ctx.stroke()
+    // Knot
+    ctx.fillStyle = "#BE185D"
+    ctx.beginPath(); ctx.ellipse(ox, by2 - 1 * sc, 2.5 * sc, 3.5 * sc, 0, 0, Math.PI * 2); ctx.fill()
+    ctx.strokeStyle = "#9D174D"; ctx.lineWidth = 0.6; ctx.stroke()
+
+  } else if (outfitId === "jacket") {
+    // Jacket lapels over the body — drawn ON TOP
+    ctx.fillStyle = "#1D4ED8"
+    // Left lapel panel
+    ctx.beginPath()
+    ctx.moveTo(ox - 1 * sc,  neckY)
+    ctx.lineTo(ox - 10 * sc, neckY + 5 * sc)
+    ctx.lineTo(ox - 8 * sc,  bodyBot)
+    ctx.lineTo(ox - 1 * sc,  bodyBot - 3 * sc)
+    ctx.closePath(); ctx.fill()
+    // Right lapel panel
+    ctx.beginPath()
+    ctx.moveTo(ox + 1 * sc,  neckY)
+    ctx.lineTo(ox + 10 * sc, neckY + 5 * sc)
+    ctx.lineTo(ox + 8 * sc,  bodyBot)
+    ctx.lineTo(ox + 1 * sc,  bodyBot - 3 * sc)
+    ctx.closePath(); ctx.fill()
+    // Collar V edges
+    ctx.strokeStyle = "#1E40AF"; ctx.lineWidth = 0.8
+    ctx.beginPath(); ctx.moveTo(ox - 1 * sc, neckY); ctx.lineTo(ox - 10 * sc, neckY + 5 * sc); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(ox + 1 * sc, neckY); ctx.lineTo(ox + 10 * sc, neckY + 5 * sc); ctx.stroke()
+    // Buttons down centre
+    ctx.fillStyle = "#BFDBFE"
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath()
+      ctx.arc(ox, neckY + 4 * sc + i * 4 * sc, 1.4 * sc, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.strokeStyle = "#93C5FD"; ctx.lineWidth = 0.5; ctx.stroke()
+    }
+  }
+}
+
 function drawPetAvatar(
   ctx: CanvasRenderingContext2D,
   ax: number, ay: number,
   petType: ChildPetType, stage: PetStage,
   facing: "N" | "S" | "E" | "W",
   t: number, moving: boolean,
-  equippedHatEmoji?: string, equippedOutfitEmoji?: string,
+  equippedHat?: string, equippedOutfit?: string,
 ) {
   const c = PET_PALETTE[petType]
-  // Scale slightly by stage so pet looks bigger as it grows
-  const sc = 0.70 + (stage - 1) * 0.075
+  // Scale by stage — bumped up so pet is more visible in the playpen
+  const sc = 1.0 + (stage - 1) * 0.08
 
   // Shadow
   ctx.fillStyle = "rgba(0,0,0,0.18)"
@@ -678,6 +903,9 @@ function drawPetAvatar(
     ctx.beginPath(); ctx.moveTo(ax + 1, baseY - 6); ctx.quadraticCurveTo(ax + 3, baseY - 8, ax + 5, baseY - 6); ctx.stroke()
     return
   }
+
+  // Cape drawn first so the body sits on top of it
+  if (equippedOutfit === "cape") drawOutfit(ctx, "cape", ax, baseY, sc)
 
   // Legs
   ctx.fillStyle = c.accent
@@ -803,21 +1031,11 @@ function drawPetAvatar(
     ctx.strokeStyle = "#d97706"; ctx.lineWidth = 0.8; ctx.stroke()
   }
 
-  // Hat (text fallback — positioned above head)
-  if (equippedHatEmoji) {
-    ctx.font = `${Math.round(14 * sc + 4)}px serif`
-    ctx.textAlign = "center"
-    ctx.fillText(equippedHatEmoji, ax, baseY - 28 * sc)
-    ctx.textAlign = "left"
-  }
+  // Scarf / bow-tie / jacket drawn after head so they layer over the body
+  if (equippedOutfit && equippedOutfit !== "cape") drawOutfit(ctx, equippedOutfit, ax, baseY, sc)
 
-  // Outfit badge
-  if (equippedOutfitEmoji) {
-    ctx.font = `${Math.round(11 * sc + 2)}px serif`
-    ctx.textAlign = "center"
-    ctx.fillText(equippedOutfitEmoji, ax + 13 * sc, baseY - 4)
-    ctx.textAlign = "left"
-  }
+  // Hat (drawn last, on top of everything)
+  if (equippedHat) drawHat(ctx, equippedHat, ax, baseY, sc)
 }
 
 // ── Name tag ─────────────────────────────────────────────────────────────────
